@@ -1,0 +1,20 @@
+[
+  {
+    "brand": "Overture",
+    "name": "PETG",
+    "shore_hardness": "72D",
+    "specialty": "Facilidad de extrusión, excelente adhesión intercapa."
+  },
+  {
+    "brand": "ESUN",
+    "name": "PETG-CF",
+    "shore_hardness": "76D",
+    "specialty": "Reforzado con fibra de carbono para máxima rigidez."
+  },
+  {
+    "brand": "Prusament",
+    "name": "PETG",
+    "shore_hardness": "74D",
+    "specialty": "Alta tenacidad, grado industrial."
+  }
+]

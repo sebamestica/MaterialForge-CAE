@@ -1,0 +1,5 @@
+{
+  "cyclic_fatigue_limit_cycles_to_failure": 100000.0,
+  "stress_amplitude_limit_mpa": 18.0,
+  "hysteresis_energy_loss_j_cycle": 0.45
+}

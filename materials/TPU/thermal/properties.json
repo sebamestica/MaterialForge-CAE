@@ -1,0 +1,9 @@
+{
+  "melting_temperature_c": 225.0,
+  "glass_transition_temperature_c": -40.0,
+  "thermal_conductivity_w_mk": 0.19,
+  "specific_heat_j_kg_k": 1800,
+  "coefficient_thermal_expansion_e6_k": 150.0,
+  "heat_deflection_temperature_045mpa_c": 60.0,
+  "thermal_accumulation_sensitivity": "Alta. La falta de enfriamiento local y la baja conductividad pueden provocar flacidez plástica y goteo de filamento."
+}

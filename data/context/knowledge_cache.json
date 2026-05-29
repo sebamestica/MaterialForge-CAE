@@ -1,0 +1,168 @@
+{
+  "project": "MaterialForge",
+  "last_compiled": "2026-05-27T18:04:28.014488Z",
+  "papers_processed": [
+    "Additive-batch-electrospinning-patterning-of-tethered-gelat_2020_Additive-Ma.pdf",
+    "An-effective-rule-for-translating-optimal-selective-laser-m_2020_Additive-Ma.pdf",
+    "Characterisation-and-correlation-of-areal-surface-texture-wi_2020_Additive-M.pdf",
+    "Continuous-and-pulsed-selective-laser-melting-of-Ti6Al4V-latti_2020_Additive.pdf",
+    "Editorial-Board_2020_Additive-Manufacturing.pdf",
+    "Effect-of-build-thickness-and-geometry-on-quasi-static-and-f_2020_Additive-M.pdf",
+    "Effect-of-stearic-acid-on-rheological-properties-and-printabil_2020_Additive.pdf",
+    "Engineered-dual-scale-poly----caprolactone--scaffolds-using-_2020_Additive-M.pdf",
+    "flyer.pdf",
+    "Functionally graded TPU gyroid structures for cushioning applications.pdf",
+    "Layer-wise-anomaly-detection-and-classification-for-powder-bed-_2020_Additiv.pdf",
+    "Manufacturing-and-characterization-of-in-situ-alloyed-Ti6A_2020_Additive-Man.pdf",
+    "Mapping-of-residual-stresses-in-as-built-Inconel-718-fabricated_2020_Additiv.pdf",
+    "materials-19-02276.pdf",
+    "Part-scale-thermo-mechanical-modelling-of-distortions-in-Laser_2020_Additive.pdf",
+    "polymers-13-02986.pdf",
+    "polymers-14-04595-v2.pdf",
+    "Productivity-optimization-of-laser-powder-bed-fusion-by_2020_Additive-Manufa.pdf",
+    "s41598-026-36271-1.pdf",
+    "Scanning-strategies-effect-on-temperature--residual-stress-a_2020_Additive-M.pdf",
+    "Structure-function-analysis-of-powder-beds-in-additive-ma_2020_Additive-Manu.pdf"
+  ],
+  "literature_summary": {
+    "materials": {
+      "TPU": {
+        "recommended_nozzle_temp": [
+          220,
+          235
+        ],
+        "recommended_speed": [
+          20,
+          35
+        ],
+        "compression_behavior": "Comportamiento elástico y altamente no lineal. Absorbe energía mediante deformación por flexión/pandeo de las paredes de celda sin fracturarse, mostrando una meseta (plateau) larga y constante antes de la densificación.",
+        "anisotropy_notes": "Sufre de anisotropía moderada a alta; las uniones entre capas son el punto débil. Soportará mayor compresión si la carga es perpendicular al esfuerzo y las capas mantienen continuidad vertical.",
+        "layer_adhesion_notes": "Mejora significativamente a bajas velocidades (20-35 mm/s) y temperaturas más altas (220-235 °C). Requiere poco o nulo flujo de refrigeración de capa para promover la fusión molecular.",
+        "common_failure_modes": [
+          "Despegue interlaminar bajo cizallamiento",
+          "Pandeo lateral localizado de las paredes delgadas del contorno",
+          "Subextrusión y huecos internos debido a velocidad excesiva"
+        ]
+      },
+      "PLA": {
+        "recommended_nozzle_temp": [
+          195,
+          220
+        ],
+        "recommended_speed": [
+          40,
+          60
+        ],
+        "compression_behavior": "Fallo frágil catastrófico tras alcanzar el punto de fluencia máxima. Alta resistencia inicial pero nula disipación viscoplástica bajo cargas de impacto.",
+        "anisotropy_notes": "Alta anisotropía. Las capas impresas en dirección del esfuerzo vertical tienden a deslizarse e iniciar la delaminación en ángulos de 45 grados.",
+        "layer_adhesion_notes": "Adhesión moderada, facilitada por temperatura y velocidades normales del slicer. Requiere enfriamiento completo de capa.",
+        "common_failure_modes": [
+          "Fractura frágil por cizallamiento a 45 grados",
+          "Delaminación en capas bajo esfuerzo cortante",
+          "Pandeo elástico repentino"
+        ]
+      }
+    },
+    "patterns": {
+      "gyroid": {
+        "advantages": [
+          "Comportamiento mecánico casi isotrópico",
+          "Continuidad tridimensional sin puntos de acumulación de tensiones",
+          "Excelente disipación de energía multidireccional"
+        ],
+        "disadvantages": [
+          "Complejidad en el corte y mayor tamaño de archivo GCODE",
+          "Mayor susceptibilidad a hilos (stringing) en velocidades altas"
+        ],
+        "compression_behavior": [
+          "Se deforma de manera estable y progresiva sin fallos localizados",
+          "Las paredes de la celda experimentan flexión en lugar de estiramiento"
+        ],
+        "energy_absorption": [
+          "Mayor disipación de energía por volumen específico",
+          "Curva de deformación suave que mitiga picos de fuerza durante el impacto"
+        ],
+        "recommended_density_range": [
+          55,
+          80
+        ]
+      },
+      "honeycomb": {
+        "advantages": [
+          "Altísima resistencia a compresión pura en el eje vertical (eje Z)",
+          "Rigidez específica sobresaliente"
+        ],
+        "disadvantages": [
+          "Gran anisotropía, muy débil frente a esfuerzos en los ejes X/Y",
+          "Fallo por pandeo repentino y colapso de las celdas hexagonales"
+        ],
+        "compression_behavior": [
+          "Alta rigidez elástica inicial, seguida de pandeo catastrófico",
+          "Las paredes experimentan colapso localizado simultáneo"
+        ],
+        "energy_absorption": [
+          "Eficiencia de absorción de impacto pobre tras el colapso elástico",
+          "Baja resiliencia bajo cargas repetidas"
+        ],
+        "recommended_density_range": [
+          30,
+          60
+        ]
+      }
+    },
+    "printing_rules": [
+      "Para filamentos elásticos (TPU), limitar la velocidad a un rango de 20-35 mm/s.",
+      "Utilizar temperaturas elevadas de extrusión en TPU (220-235°C) para optimizar la fusión de capas.",
+      "Desactivar el ventilador de enfriamiento o mantenerlo a menos de 20% para TPU.",
+      "PLA requiere enfriamiento al 100% y velocidades más altas (40-60 mm/s) para estabilidad dimensional."
+    ],
+    "simulation_notes": [
+      "La rigidez del cubo de TPU es altamente no lineal y requiere análisis elástico a grandes deformaciones.",
+      "Las interfaces y carcasas (shells) dominan la resistencia al pandeo lateral en geometrías delgadas."
+    ],
+    "optimization_rules": [
+      "Para maximizar la compresión en TPU, favorecer el patrón TPMS Gyroid con infills de 55-80%.",
+      "Aumentar el número de perímetros (wall thickness a 1.6-2.4mm) para evitar el pandeo periférico de las caras del cubo.",
+      "Usar densidad graduada ( graded density) si es posible para suavizar el impacto en la zona central."
+    ],
+    "manufacturing_constraints": [
+      "Extrusor Direct Drive recomendado para TPU; sistemas Bowden sufren atoramientos.",
+      "Grosor mínimo de pared de 0.8 mm (2 pasadas de boquilla) para mantener consistencia física."
+    ]
+  },
+  "heuristics": {
+    "TPU_compression": {
+      "pattern": "gyroid",
+      "infill_min": 55,
+      "infill_max": 80,
+      "wall_thickness_min": 1.6,
+      "wall_thickness_max": 2.4,
+      "speed_min": 20,
+      "speed_max": 35,
+      "nozzle_temp_min": 220,
+      "nozzle_temp_max": 235,
+      "layer_height_optimal": 0.16,
+      "print_orientation": "Isotrópica (perpendicular al esfuerzo Z)",
+      "wall_ordering": "outer_before_inner_OFF"
+    },
+    "PLA_stiffness": {
+      "pattern": "honeycomb",
+      "infill_min": 60,
+      "infill_max": 80,
+      "wall_thickness_min": 1.6,
+      "wall_thickness_max": 2.4,
+      "speed_min": 35,
+      "speed_max": 50,
+      "nozzle_temp_min": 210,
+      "nozzle_temp_max": 220
+    }
+  },
+  "scoring_weights": {
+    "compression_strength": 0.4,
+    "structural_stability": 0.2,
+    "energy_absorption": 0.15,
+    "manufacturability": 0.1,
+    "printability": 0.1,
+    "material_efficiency": 0.05
+  }
+}

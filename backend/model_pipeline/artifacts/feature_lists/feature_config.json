@@ -1,0 +1,22 @@
+{
+    "drop_columns": [
+        "time",
+        "unnamed",
+        "file",
+        "sheet",
+        "raw_data",
+        "axial_",
+        "specimen_id",
+        "source_trace",
+        "source_dataset",
+        "linkage_confidence",
+        "replica_letter"
+    ],
+    "categorical_features": [
+        "structure_type",
+        "infill_pattern",
+        "material"
+    ],
+    "impute_strategy_num": "median",
+    "impute_strategy_cat": "most_frequent"
+}

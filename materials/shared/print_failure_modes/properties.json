@@ -1,0 +1,25 @@
+{
+  "title": "Modos de Fallo de Impresión y Prevención",
+  "failures": [
+    {
+      "name": "Pandeo Localizado del Contorno (Shell Buckling)",
+      "description": "Las paredes exteriores del cubo colapsan lateralmente bajo cargas de compresión axial.",
+      "preventions": "Aumentar el grosor de la pared (wallThickness >= 1.6 mm) o habilitar relleno continuo."
+    },
+    {
+      "name": "Delaminación Intercapa (Interlayer Delamination)",
+      "description": "Separación de las capas de impresión debido a fuerzas de cizallamiento o gradientes de contracción térmica.",
+      "preventions": "Aumentar la temperatura de extrusión, apagar ventilador de capa, o reducir velocidad."
+    },
+    {
+      "name": "Deformación por Contracción Térmica (Warping)",
+      "description": "Las esquinas inferiores se despegan de la base de impresión debido a tensiones internas de enfriamiento rápido.",
+      "preventions": "Utilizar cámara de impresión calefactada, cama a >=90°C (para ABS), o mejorar adherencia con adhesivo."
+    },
+    {
+      "name": "Instabilidad de Pandeo por TPU flexible (Extrusion Buckling)",
+      "description": "El filamento elástico de TPU se dobla en el extrusor antes de entrar en la zona caliente de la boquilla.",
+      "preventions": "Usar extrusor Direct Drive con guías de filamento ajustadas, y restringir velocidades de impresión."
+    }
+  ]
+}

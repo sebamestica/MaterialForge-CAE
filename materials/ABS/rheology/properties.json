@@ -1,0 +1,8 @@
+{
+  "melt_flow_index_g_10min": 19.0,
+  "viscosity_profile": "Newtoniana moderada en rangos normales de impresión.",
+  "recommended_extrusion_temperature_range": [
+    230,
+    255
+  ]
+}

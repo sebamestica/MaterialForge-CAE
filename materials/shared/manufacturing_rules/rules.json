@@ -1,0 +1,41 @@
+{
+  "title": "Reglas de Diseño y Manufactura Sostenible",
+  "material_rules": {
+    "TPU": [
+      {
+        "condition": "printSpeed > 35",
+        "action": "WARNING",
+        "text": "Velocidad excesiva para elastómeros. TPU requiere velocidades bajas (20-35 mm/s) para evitar atascamientos."
+      },
+      {
+        "condition": "infillDensity < 35 and cellSize > 6.0",
+        "action": "CRITICAL",
+        "text": "Celdas demasiado grandes en TPU provocan fallos de puente y deformación inestable."
+      },
+      {
+        "condition": "wallThickness < 0.8",
+        "action": "CRITICAL",
+        "text": "El espesor mínimo en TPU debe ser >= 0.8mm (2 perímetros) para evitar desgarros."
+      }
+    ],
+    "ABS": [
+      {
+        "condition": "enclosure_enabled == False",
+        "action": "CRITICAL",
+        "text": "ABS requiere cámara calefactada o cerrada para evitar fisuras por gradientes de temperatura."
+      },
+      {
+        "condition": "fan_speed > 20",
+        "action": "WARNING",
+        "text": "Exceso de ventilación en ABS induce delaminación interlayer y warping catastrófico."
+      }
+    ],
+    "PETG": [
+      {
+        "condition": "layer_cooling < 30",
+        "action": "WARNING",
+        "text": "Bajo enfriamiento en PETG causa excesivos hilos (stringing) y goteos térmicos."
+      }
+    ]
+  }
+}

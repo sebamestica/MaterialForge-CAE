@@ -1,0 +1,7 @@
+{
+  "norm_modulus": 0.72,
+  "norm_hardness": 0.8,
+  "norm_adhesion": 0.45,
+  "warping_factor": 0.9,
+  "elasticity_index": 0.15
+}

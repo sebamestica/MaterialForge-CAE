@@ -1,0 +1,14 @@
+{
+  "DirectDrive": {
+    "max_print_speed_mm_s": 35.0,
+    "retraction_distance_mm": 1.5,
+    "retraction_speed_mm_s": 25.0,
+    "extrusion_multiplier": 1.05
+  },
+  "Bowden": {
+    "max_print_speed_mm_s": 15.0,
+    "retraction_distance_mm": 5.0,
+    "retraction_speed_mm_s": 15.0,
+    "extrusion_multiplier": 1.1
+  }
+}

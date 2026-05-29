@@ -1,0 +1,11 @@
+Configuración de Impresión Optimizada - TPU 50mm
+================================================
+Patrón: gyroid
+Infill: 10.0%
+Paredes: 2 (0.8mm)
+Material: TPU (Shore 95A recomendado)
+Masa Estimada: 27.55 g
+Temperatura Boquilla: 230°C
+Temperatura Cama: 60°C
+Velocidad: 30 mm/s (Baja velocidad para TPU)
+Retracción: Desactivada o mínima (2mm @ 20mm/s)

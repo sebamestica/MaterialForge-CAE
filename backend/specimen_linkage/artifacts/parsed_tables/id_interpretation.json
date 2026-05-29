@@ -1,0 +1,40 @@
+{
+  "G": {
+    "structure": "gyroid",
+    "unique_numeric_values": [
+      29,
+      42,
+      62
+    ],
+    "n_variants": 3,
+    "interpretation": "The numeric component ([29, 42, 62]) likely encodes a design parameter such as relative density (%), cell size (mm), or strut thickness index. Values increase monotonically across groups, consistent with a density or size gradient. Exact physical meaning cannot be determined from filenames alone — requires original experimental protocol documentation."
+  },
+  "H": {
+    "structure": "honeycomb",
+    "unique_numeric_values": [
+      36,
+      44,
+      67
+    ],
+    "n_variants": 3,
+    "interpretation": "The numeric component ([36, 44, 67]) likely encodes a design parameter such as relative density (%), cell size (mm), or strut thickness index. Values increase monotonically across groups, consistent with a density or size gradient. Exact physical meaning cannot be determined from filenames alone — requires original experimental protocol documentation."
+  },
+  "T": {
+    "structure": "triply_periodic",
+    "unique_numeric_values": [
+      24,
+      37,
+      45
+    ],
+    "n_variants": 3,
+    "interpretation": "The numeric component ([24, 37, 45]) likely encodes a design parameter such as relative density (%), cell size (mm), or strut thickness index. Values increase monotonically across groups, consistent with a density or size gradient. Exact physical meaning cannot be determined from filenames alone — requires original experimental protocol documentation."
+  },
+  "TQ": {
+    "structure": "triply_periodic",
+    "unique_numeric_values": [
+      45
+    ],
+    "n_variants": 1,
+    "interpretation": "The numeric component ([45]) likely encodes a design parameter such as relative density (%), cell size (mm), or strut thickness index. Values increase monotonically across groups, consistent with a density or size gradient. Exact physical meaning cannot be determined from filenames alone — requires original experimental protocol documentation."
+  }
+}

@@ -1,0 +1,12 @@
+{
+    "indexed_at": "2026-05-26T18:17:13.499231",
+    "embedding_model": "nomic-embed-text",
+    "total_documents": 4,
+    "total_chunks": 34,
+    "indexed_files": [
+        "README.md",
+        "ia_agent\\README.md",
+        "data\\processed\\dataset_quality_report.json",
+        "data\\processed\\dataset_manifest.json"
+    ]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "Creality Ender 3 V3 KE",
+  "manufacturer": "Creality",
+  "firmware": "Klipper-assisted",
+  "motion_system": "Bedslinger",
+  "build_volume": {
+    "x": 220.0,
+    "y": 220.0,
+    "z": 240.0
+  },
+  "origin": "front_left",
+  "hardware": {
+    "nozzle_diameter": 0.4,
+    "max_nozzle_temp": 300.0,
+    "max_bed_temp": 100.0
+  },
+  "motion_limits": {
+    "max_speed": 500.0,
+    "recommended_tpu_speed": [15.0, 35.0],
+    "max_acceleration": 8000.0
+  },
+  "materials": ["TPU", "PLA", "PETG", "ABS"],
+  "slicer": {
+    "preferred": "OrcaSlicer"
+  },
+  "manufacturing_constraints": [
+    "Al ser bedslinger (cama móvil), la aceleración en el eje Y genera fuerzas inerciales altas que pueden desadherir piezas altas o causar pandeo en TPU.",
+    "El volumen de la pieza no debe exceder los 220x220x240 mm.",
+    "Requiere calibración de resonancia (Input Shaping) para evitar ghosting a altas velocidades."
+  ],
+  "tpu_rules": [
+    "Velocidad de impresión recomendada: 15-35 mm/s (extrusor Sprite direct drive).",
+    "Temperatura recomendada de boquilla: 220-235 °C.",
+    "Retracción: menor a 1.5 mm a 20 mm/s.",
+    "Ventilador de capa: 20-40% para una adhesión interlaminar robusta."
+  ],
+  "supported_exports": ["stl", "3mf", "gcode"]
+}

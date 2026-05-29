@@ -1,0 +1,9 @@
+{
+  "melting_temperature_c": 240.0,
+  "glass_transition_temperature_c": 105.0,
+  "thermal_conductivity_w_mk": 0.17,
+  "specific_heat_j_kg_k": 1400,
+  "coefficient_thermal_expansion_e6_k": 90.0,
+  "heat_deflection_temperature_045mpa_c": 85.0,
+  "thermal_accumulation_sensitivity": "Baja. Sin embargo, sufre tensiones residuales por gradientes térmicos elevados."
+}

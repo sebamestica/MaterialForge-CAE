@@ -1,0 +1,21 @@
+{
+    "status": "Final de la iteracion (Consolidacion)",
+    "decision": "Prototipo Valido",
+    "dataset_oficial": "high_confidence_dataset.csv",
+    "n_samples": 35,
+    "modelo_ganador": "GradientBoostingRegressor",
+    "precision_test_R2": "0.9733",
+    "precision_test_MAE": "0.3925",
+    "precision_train_R2": "0.9999",
+    "gap_sobreajuste": "0.0266",
+    "features_finales": [
+        "structure_type",
+        "infill_pattern",
+        "design_param_numeric",
+        "design_param_relative",
+        "compressive_strength_mean",
+        "compressive_strength_std",
+        "n_readings"
+    ],
+    "timestamp": "2026-03-29T23:17:01.029106"
+}

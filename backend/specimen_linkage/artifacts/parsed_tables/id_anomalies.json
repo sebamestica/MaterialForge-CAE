@@ -1,0 +1,10 @@
+[
+  {
+    "specimen_id": "T45QA",
+    "reason": "Suffix 'QA' is longer than expected single letter — may encode additional info"
+  },
+  {
+    "specimen_id": "T45QB",
+    "reason": "Suffix 'QB' is longer than expected single letter — may encode additional info"
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "young_modulus_nominal_gpa": 2.1,
+  "tensile_strength_nominal_mpa": 50.0,
+  "shear_modulus_gpa": 0.78,
+  "poisson_ratio": 0.37,
+  "impact_strength_izod_j_m": 120.0,
+  "yield_strength_mpa": 45.0,
+  "elongation_break_percent": 50.0,
+  "compression_behavior": "Comportamiento tenaz con alta ductilidad, combinando rigidez intermedia con deformación plástica y alta resistencia al cizallamiento interlaminar."
+}

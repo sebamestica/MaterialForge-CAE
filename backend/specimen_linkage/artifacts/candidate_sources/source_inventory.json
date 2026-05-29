@@ -1,0 +1,214 @@
+{
+  "Compressivedata_cleaned.csv": {
+    "type": "timeseries_compressive",
+    "potential": [
+      "specimen_ids",
+      "stress_per_reading"
+    ],
+    "has_explicit_specimen_col": true,
+    "notes": "High-frequency sensor log. specimen_id in column 'probeta'. No process parameters present.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\Normalization\\cleaned\\Compressivedata_cleaned.csv",
+    "n_rows_approx": 169686,
+    "columns": [
+      "raw_data",
+      "unnamed:_1",
+      "unnamed:_2",
+      "unnamed:_3",
+      "unnamed:_4",
+      "unnamed:_5",
+      "unnamed:_6",
+      "unnamed:_7",
+      "unnamed:_8",
+      "probeta",
+      "raw_data.1",
+      "raw_data.2"
+    ]
+  },
+  "Propiedades_Extraidas_cleaned.csv": {
+    "type": "summary_table",
+    "potential": [
+      "specimen_ids",
+      "dim_length",
+      "dim_thickness",
+      "dim_width",
+      "transverse_area"
+    ],
+    "has_explicit_specimen_col": true,
+    "notes": "Lists all compressive specimen IDs via 'sheet' column. All numeric property columns (max_force, modulo_young, etc.) are EMPTY for compressive entries. Dimension columns (length, thickness, width, transverse_area) are present but also EMPTY.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\Normalization\\cleaned\\Propiedades_Extraidas_cleaned.csv",
+    "n_rows_approx": 100,
+    "columns": [
+      "file",
+      "sheet",
+      "max_force",
+      "maxstrain",
+      "modulo_young",
+      "maxstrainext",
+      "length",
+      "thickness",
+      "width",
+      "transverse_area"
+    ]
+  },
+  "FDM_Dataset_cleaned.csv": {
+    "type": "process_parameters",
+    "potential": [
+      "layer_height_mm",
+      "infill_density_%",
+      "infill_pattern",
+      "material",
+      "microstructure",
+      "material_type",
+      "print_speed_mm_s",
+      "melting_temperature_c"
+    ],
+    "has_explicit_specimen_col": false,
+    "notes": "50 rows of FDM print parameters. NO specimen_id column. Has 'microstructure' (fine/coarse) and 'material_type' (pure/composite). Cannot be joined to specimens — no shared key.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\Normalization\\cleaned\\FDM_Dataset_cleaned.csv",
+    "n_rows_approx": 50,
+    "columns": [
+      "layer_height_mm",
+      "infill_density_%",
+      "infill_pattern",
+      "bed_temperature_c",
+      "print_speed_mm_s",
+      "material",
+      "fan_speed_m_s",
+      "nozzle_diameter_mm",
+      "build_volume_cm3",
+      "filament_type",
+      "filament_diameter_mm",
+      "melting_temperature_c",
+      "retraction_distance_mm",
+      "retraction_speed_mm_s",
+      "flow_rate_%",
+      "acceleration_mm_s2",
+      "linear_advance",
+      "loading_rate_n_s",
+      "microstructure",
+      "material_type"
+    ]
+  },
+  "data_cleaned.csv": {
+    "type": "process_result_tensile",
+    "potential": [
+      "layer_height",
+      "infill_density",
+      "material",
+      "infill_pattern"
+    ],
+    "has_explicit_specimen_col": false,
+    "notes": "50 rows of tensile test results with print parameters. No specimen_id column. Tensile data — not compressive. Cannot link to compressive specimens.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\Normalization\\cleaned\\data_cleaned.csv",
+    "n_rows_approx": 50,
+    "columns": [
+      "layer_height",
+      "wall_thickness",
+      "infill_density",
+      "infill_pattern",
+      "nozzle_temperature",
+      "bed_temperature",
+      "print_speed",
+      "material",
+      "fan_speed",
+      "roughness",
+      "tension_strenght",
+      "elongation"
+    ]
+  },
+  "TensiondataA_cleaned.csv": {
+    "type": "timeseries_tension",
+    "potential": [
+      "specimen_ids"
+    ],
+    "has_explicit_specimen_col": true,
+    "notes": "Tension test time-series. Specimen IDs are for tension specimens (Sol.A, Sol.B, G36A, G55B...) — DIFFERENT experiment from compressive. Not linkable to compressive specimens.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\Normalization\\cleaned\\TensiondataA_cleaned.csv",
+    "n_rows_approx": 26228,
+    "columns": [
+      "unnamed:_0",
+      "axial_force",
+      "axial_displacement",
+      "time",
+      "axial_displacement_error",
+      "axial_634.12f",
+      "strain_[mm/mm]",
+      "stress[mpa]",
+      "strainext[mm/mm]",
+      "probeta",
+      "raw_data",
+      "unnamed:_1",
+      "unnamed:_2",
+      "unnamed:_3",
+      "unnamed:_4",
+      "unnamed:_5",
+      "unnamed:_6",
+      "unnamed:_7",
+      "unnamed:_8"
+    ]
+  },
+  "TensiondataB_cleaned.csv": {
+    "type": "timeseries_tension",
+    "potential": [
+      "specimen_ids"
+    ],
+    "has_explicit_specimen_col": true,
+    "notes": "Tension test time-series for a second batch. Specimen IDs (10RA, 36RB, 55TA...) use DIFFERENT naming convention. Not linkable to compressive specimens.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\Normalization\\cleaned\\TensiondataB_cleaned.csv",
+    "n_rows_approx": 5514,
+    "columns": [
+      "unnamed:_0",
+      "axial_force",
+      "axial_displacement",
+      "time",
+      "axial_displacement_error",
+      "axial_634.12f",
+      "strain_[mm/mm]",
+      "stress[mpa]",
+      "strainext[mm/mm]",
+      "probeta"
+    ]
+  },
+  "Normalization/config/column_mappings.json": {
+    "type": "metadata",
+    "potential": [
+      "column_name_mappings"
+    ],
+    "notes": "Column rename mappings. Confirms column structure of each file. No specimen-level linkage information.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\Normalization\\config\\column_mappings.json",
+    "n_rows_approx": null,
+    "columns": []
+  },
+  "Normalization/config/file_registry.json": {
+    "type": "metadata",
+    "potential": [
+      "value_score",
+      "reliability_score",
+      "status"
+    ],
+    "notes": "Dataset registry. No specimen-level data.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\Normalization\\config\\file_registry.json",
+    "n_rows_approx": null,
+    "columns": []
+  },
+  "model_data_audit/artifacts/candidate_targets/candidate_A_compressive_only.csv": {
+    "type": "derived_compressive_dataset",
+    "potential": [
+      "specimen_ids",
+      "compressive_strength",
+      "structure_type"
+    ],
+    "notes": "The 35 valid compressive specimens aggregated. Starting point for linkage.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\model_data_audit\\artifacts\\candidate_targets\\candidate_A_compressive_only.csv",
+    "n_rows_approx": null,
+    "columns": []
+  },
+  "data/Proyecto_Machine_Learning/printer_dataset.py": {
+    "type": "analysis_script",
+    "potential": [],
+    "notes": "ML script from the original author (AFUMETTO, 2018). Works only on data.csv (tensile). No references to specimen IDs or compressive data. Not useful for linkage.",
+    "path": "C:\\dev\\PLA_3dPrinter_RESISTENCE\\data\\Proyecto_Machine_Learning\\printer_dataset.py",
+    "n_rows_approx": null,
+    "columns": []
+  }
+}

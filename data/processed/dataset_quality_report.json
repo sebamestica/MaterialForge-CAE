@@ -1,0 +1,22 @@
+{
+    "timestamp": "2026-05-27T18:11:30.558419",
+    "metrics": {
+        "total_specimens": 430,
+        "materials_count": {
+            "PLA": 321,
+            "ABS": 50,
+            "fluoroelastomer": 38,
+            "Carbon-PLA": 21
+        },
+        "test_types_count": {
+            "tensile": 324,
+            "compression": 106
+        },
+        "avg_curve_quality_score": 0.9928934010152284,
+        "null_properties": {
+            "young_modulus": 100,
+            "max_stress": 1
+        }
+    },
+    "quality_warnings": []
+}

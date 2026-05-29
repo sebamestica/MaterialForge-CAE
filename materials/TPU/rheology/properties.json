@@ -1,0 +1,8 @@
+{
+  "melt_flow_index_g_10min": 15.0,
+  "viscosity_profile": "No-Newtoniana (adgazamiento por cizallamiento). La viscosidad disminuye significativamente al aumentar la tasa de cizallamiento en el extrusor.",
+  "recommended_extrusion_temperature_range": [
+    220,
+    240
+  ]
+}

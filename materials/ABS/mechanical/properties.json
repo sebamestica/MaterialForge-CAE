@@ -1,0 +1,10 @@
+{
+  "young_modulus_nominal_gpa": 2.3,
+  "tensile_strength_nominal_mpa": 40.0,
+  "shear_modulus_gpa": 0.85,
+  "poisson_ratio": 0.35,
+  "impact_strength_izod_j_m": 200.0,
+  "yield_strength_mpa": 38.0,
+  "elongation_break_percent": 30.0,
+  "compression_behavior": "Rígido con fluencia definida, seguido de deformación plástica progresiva antes del agrietamiento por cizalladura."
+}

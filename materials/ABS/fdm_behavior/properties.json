@@ -1,0 +1,7 @@
+{
+  "layer_adhesion_strength_factor_0_to_1": 0.55,
+  "bridging_limit_mm": 15.0,
+  "overhang_angle_limit_deg": 50.0,
+  "stringing_index_1_to_10": 4,
+  "pressure_advance_sensitivity": "Moderada (rango 0.05 a 0.15)."
+}

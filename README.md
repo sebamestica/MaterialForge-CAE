@@ -1,48 +1,144 @@
-# Resistencia Estructural en Cubos 3D: Proyecto de Ingeniería & ML
+# Sistema de Análisis y Simulación de Impresión 3D - Backend & Data Science Lab
 
-Este proyecto desarrolla un sistema predictivo y de visualización para analizar la respuesta mecánica (resistencia a la compresión) de componentes fabricados mediante manufactura aditiva (impresión 3D).
+Este repositorio contiene el núcleo de simulación, modelado mecánico y procesamiento de datos para el estudio de resistencia estructural en probetas impresas en 3D (PLA y TPU).
 
-## 🎯 Objetivo
-Predecir con alta precisión la resistencia a compresión (MPa) basándose en parámetros de diseño (infill, material, temperatura, etc.) y visualizar el comportamiento estimado en una interfaz 3D profesional.
-
-## 🏗️ Arquitectura del Proyecto
-
-El sistema está organizado en un flujo de **pipelines** modulares y una capa de **visualización** integrada.
-
-- **`pipelines/`**: Núcleo del procesamiento de datos.
-  - `normalization/`: Limpieza y escalamiento de variables.
-  - `specimen_linkage/`: Unión de datos de fabricación con resultados de ensayos mecánicos.
-  - `model_pipeline/`: Entrenamiento de modelos GBR (Gradient Boosting Regressor) con alta fidelidad (R2 ~0.90+).
-  - `decision_ready/`: Validación final y generación de reportes consolidados.
-- **`visuals/`**: Análisis gráfico estático de las distribuciones y correlaciones mecánicas.
-- **`frontend/`**: Dashboard interactivo con visualización 3D del cubo ante compresión (React + Three.js).
-- **`data/`**: Datasets organizados por fase (raw, processed, final).
-- **`archived/`**: Memoria histórica del proyecto (EDA, auditorías previas y experimentos).
-
-## 🚀 Cómo Ejecutar
-
-### 1. Requisitos
-- Python 3.9+
-- Node.js (para el frontend)
-
-### 2. Ejecutar el Pipeline de Datos
-Para validar el estado actual del modelo y generar reportes:
-```powershell
-cd pipelines/decision_ready
-python src/validate_current_model.py
-```
-
-### 3. Ejecutar la Visualización 3D
-```powershell
-cd frontend
-npm install
-npm run dev -- --host
-```
-
-## 📊 Resultados Destacados
-- **Modelo Ganador:** Gradient Boosting Regressor.
-- **Precisión:** R2 ~0.90 en conjunto de prueba.
-- **Dataset Validado:** 35 especímenes con vinculación de alta confianza manual y automática.
+El sistema utiliza modelos de Machine Learning (como `GradientBoostingRegressor`) entrenados con datos reales de ensayos de compresión para predecir la resistencia de distintas configuraciones de infill y geometrías.
 
 ---
-**Nota Técnica:** Todas las visualizaciones 3D en el frontend representan una **interpretación visual asistida por el modelo** y no deben tomarse como simulaciones físicas exactas.
+
+## 📁 Estructura General del Proyecto
+
+El proyecto está estructurado como una plataforma CAD/CAE de nivel industrial modular, dividida en un Backend de simulación/ML y un Frontend web en Next.js (React Three Fiber):
+
+```text
+├── backend/                             # Servidor FastAPI de Inferencia y Geometría
+│   ├── main.py                          # Servidor FastAPI y endpoints de la API Bridge
+│   ├── requirements.txt                 # Dependencias unificadas de Python
+│   ├── model_pipeline/                  # Pipeline de entrenamiento y validación de modelos ML
+│   ├── normalization/                   # Pipeline de limpieza y normalización de datasets
+│   ├── specimen_linkage/                # Vinculación y trazabilidad de probetas
+│   ├── decision_ready/                  # Reportes analíticos de madurez de modelos
+│   ├── compression_graphics/            # Generación de gráficos y reportes visuales
+│   └── scripts/                         # Utilidades locales de optimización geométrica
+│
+├── frontend/                            # Cliente Web Interactivo en Next.js
+│   ├── src/
+│   │    ├── config/                     # Configuraciones Centrales de Parámetros
+│   │    ├── stores/                     # Control de Estado Global (Zustand)
+│   │    │
+│   │    ├── cad/                        # Núcleo de Geometría CAD e Infill
+│   │    │    ├── geometry/              # Tamaño y dimensiones de los objetos
+│   │    │    ├── tpms/                  # Definición matemática de celdas
+│   │    │    ├── exporters/             # Exportadores STL, G-Code y PDF
+│   │    │    └── validators/            # Validadores geométricos de malla
+│   │    │
+│   │    ├── rendering/                  # Canvas de Visualización 3D (R3F)
+│   │    │    ├── viewport/              # Visor 3D principal (BaseViewport.tsx)
+│   │    │    └── diagnostics/           # Diagnósticos y estadísticas de FPS (PerformanceHUD)
+│   │    │
+│   │    ├── slicing/                    # Cinemática e Impresoras 3D
+│   │    │    ├── manufacturing/         # Panel de Fabricación y validaciones
+│   │    │    ├── printerProfiles/       # Especificaciones de hardware (Creality, Ender)
+│   │    │    └── gcode/                 # Generación y simulación de trayectorias
+│   │    │
+│   │    ├── ml/                         # Capa de Inteligencia Artificial
+│   │    │    ├── adapters/              # Adaptadores desacoplados (Ollama, OpenAI, LM Studio)
+│   │    │    └── rag/                   # Sistema de Ingesta Vectorial y RAG
+│   │    │
+│   │    └── app/                        # Next.js Pages Router
+│
+├── data/                                # Base de datos y datasets en formato CSV
+└── .venv/                               # Entorno virtual de Python
+```
+
+---
+
+## 🛠️ Requisitos e Instalación
+
+Para ejecutar el backend de forma local, activa el entorno virtual de Python e instala las dependencias necesarias:
+
+1. **Activar el entorno virtual**:
+   - En Windows (PowerShell):
+     ```powershell
+     & .venv\Scripts\activate
+     ```
+   - En Linux/macOS:
+     ```bash
+     source .venv/bin/activate
+     ```
+
+2. **Instalar dependencias**:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
+
+---
+
+## 🚀 Ejecución del Servidor API
+
+El backend expone una API REST construida con FastAPI que realiza inferencias estructurales y genera geometrías 3D de forma volumétrica:
+
+```powershell
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Una vez levantado el servidor, puedes explorar la documentación interactiva en:
+👉 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+### Endpoints Disponibles:
+
+1. **Inferencia de Carga Estructural (`POST /api/predict_structural_load`)**:
+   - Recibe parámetros de diseño (geometría, material y tipo/densidad de infill).
+   - Utiliza el modelo `GradientBoostingRegressor_deployment_ready.pkl` para predecir la resistencia de fluencia (`yieldStrengthMpa`), carga máxima, rigidez y deformación aproximada con un alto nivel de confianza.
+
+2. **Generación de Mallas STL Manifold (`POST /api/generate_stl`)**:
+   - Genera campos de distancia volumétrica (SDF) para patrones celulares complejos (Gyroid, Honeycomb, Triply Periodic Schwarz P).
+   - Ejecuta un extractor *Marching Cubes* para devolver un archivo binario `.stl` watertight e imprimible en 3D.
+
+3. **Previsualización de Malla Liviana (`POST /api/generate_mesh`)**:
+   - Similar a `/api/generate_stl` pero devuelve vértices y caras listos para visualizadores web ligeros en formato JSON.
+
+---
+
+## 🔬 Scripts de Optimización e Inferencia Local
+
+En `backend/scripts/` hay utilidades que consumen el modelo entrenado y los datos para diseñar geometrías optimizadas:
+
+- **Optimización PLA (`optimize_cube.py`)**:
+  Diseña un bloque de PLA de 50mm para maximizar la resistencia a la compresión por debajo de un límite de peso de 100g.
+  ```powershell
+  python backend/scripts/optimize_cube.py
+  ```
+
+- **Optimización TPU (`execute_project_tpu.py`)**:
+  Diseña y genera una malla 3D optimizada para maximizar la absorción de energía en impactos utilizando estructuras elásticas de TPU.
+  ```powershell
+  python backend/scripts/execute_project_tpu.py
+  ```
+
+---
+
+## 📊 Ejecución de Pipelines de Datos
+
+Puedes ejecutar cualquiera de las fases del pipeline de ciencia de datos independientemente:
+
+- **Limpieza de Datos**:
+  ```powershell
+  python backend/normalization/run_pipeline.py
+  ```
+- **Trazabilidad de Probetas**:
+  ```powershell
+  python backend/specimen_linkage/run_specimen_linkage.py
+  ```
+- **Entrenamiento de Modelos**:
+  ```powershell
+  python backend/model_pipeline/run_model_pipeline.py
+  ```
+- **Consolidación e Informe de Estabilidad**:
+  ```powershell
+  python backend/decision_ready/run_decision_ready.py
+  ```
+- **Gráficos Estadísticos**:
+  ```powershell
+  python backend/compression_graphics/run_compression_graphics.py
+  ```

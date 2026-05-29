@@ -1,0 +1,38 @@
+{
+  "name": "Creality CR-10 SE",
+  "manufacturer": "Creality",
+  "firmware": "Klipper-based",
+  "motion_system": "Bedslinger",
+  "build_volume": {
+    "x": 220.0,
+    "y": 220.0,
+    "z": 260.0
+  },
+  "origin": "front_left",
+  "hardware": {
+    "nozzle_diameter": 0.4,
+    "max_nozzle_temp": 300.0,
+    "max_bed_temp": 110.0
+  },
+  "motion_limits": {
+    "max_speed": 600.0,
+    "recommended_tpu_speed": [20.0, 40.0],
+    "max_acceleration": 8000.0
+  },
+  "materials": ["TPU", "PLA", "PETG", "ABS", "ASA"],
+  "slicer": {
+    "preferred": "OrcaSlicer"
+  },
+  "manufacturing_constraints": [
+    "Sistema bedslinger con rieles lineales de alta precisión en ejes X y Y que reduce vibraciones.",
+    "El volumen de la pieza no debe exceder los 220x220x260 mm.",
+    "El extrusor directo Sprite modificado maneja materiales flexibles con excelente control de flujo."
+  ],
+  "tpu_rules": [
+    "Velocidad de impresión recomendada: 20-40 mm/s.",
+    "Temperatura recomendada de boquilla: 220-240 °C.",
+    "Retracción: menor a 1.0 mm a 25 mm/s.",
+    "Ventilador de capa: 30-50% para equilibrar enfriamiento de retículas complejas."
+  ],
+  "supported_exports": ["stl", "3mf", "gcode"]
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "brand": "NinjaTek",
+    "name": "NinjaFlex",
+    "shore_hardness": "85A",
+    "specialty": "Flexibilidad extrema, tacto de goma."
+  },
+  {
+    "brand": "SainSmart",
+    "name": "TPU Filament",
+    "shore_hardness": "95A",
+    "specialty": "Excelente imprimibilidad, equilibrio mecánico."
+  },
+  {
+    "brand": "BASF",
+    "name": "Ultrafuse TPU 95A",
+    "shore_hardness": "95A",
+    "specialty": "Grado industrial, resistente a la abrasión."
+  },
+  {
+    "brand": "eSUN",
+    "name": "eTPU-95A",
+    "shore_hardness": "95A",
+    "specialty": "Alta rentabilidad y ductilidad elástica."
+  }
+]

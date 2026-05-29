@@ -1,0 +1,9 @@
+{
+  "melting_temperature_c": 235.0,
+  "glass_transition_temperature_c": 80.0,
+  "thermal_conductivity_w_mk": 0.21,
+  "specific_heat_j_kg_k": 1200,
+  "coefficient_thermal_expansion_e6_k": 70.0,
+  "heat_deflection_temperature_045mpa_c": 70.0,
+  "thermal_accumulation_sensitivity": "Moderada. Requiere enfriamiento adecuado para evitar deformaciones locales."
+}

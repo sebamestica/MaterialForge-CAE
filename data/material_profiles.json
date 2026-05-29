@@ -1,0 +1,58 @@
+{
+  "PLA": {
+    "full_name": "Ácido Poliláctico (Polylactic Acid)",
+    "density_g_cm3": 1.24,
+    "young_modulus_gpa": 1.62,
+    "young_modulus_mpa": 1620.0,
+    "tensile_strength_mpa": 55.0,
+    "recommended_nozzle_temp_c": [195, 220],
+    "recommended_bed_temp_c": [50, 60],
+    "recommended_speed_structural_mm_s": [40, 50],
+    "behavior_class": "rigid_thermoplastic",
+    "description": "Polímero rígido y fácil de imprimir con alta resistencia a compresión inicial.",
+    "mechanical_behavior": "Rígido y quebradizo en tracción; alta resistencia inicial a compresión uniaxial, pero sufre fractura frágil bajo carga cíclica o de impacto elevado.",
+    "structural_notes": "Aumentar el espesor de pared (shell thickness) tiene un impacto directo mayor en la resistencia al pandeo que aumentar la densidad de infill. Se sugiere una pared de 1.6mm a 2.4mm, velocidad moderada y orientación perpendicular al esfuerzo crítico para maximizar resistencia."
+  },
+  "TPU": {
+    "full_name": "Poliuretano Termoplástico (Thermoplastic Polyurethane)",
+    "density_g_cm3": 1.20,
+    "young_modulus_gpa": 0.08,
+    "young_modulus_mpa": 80.0,
+    "tensile_strength_mpa": 30.0,
+    "recommended_nozzle_temp_c": [220, 235],
+    "recommended_bed_temp_c": [50, 60],
+    "recommended_speed_structural_mm_s": [20, 35],
+    "behavior_class": "elastomer",
+    "description": "Elastómero altamente flexible, tenaz y con excelente recuperación elástica.",
+    "mechanical_behavior": "Altamente tenaz, elástico y capaz de recuperar su forma original tras grandes deformaciones. Excelente disipador viscoplástico.",
+    "structural_notes": "Para resistencia extrema a compresión y absorción de energía, usar infill alto de 55-80% (dependiendo del lattice y peso) con patrones TPMS continuos como Gyroid o Graded Gyroid (centro semi-absorbente y periferia densa). Shell robusto de 1.6-2.4mm previene el colapso. Mantener velocidad baja (20-35 mm/s) y temperatura en boquilla alta (220-235°C) para maximizar la adherencia interlaminar y estabilidad del flujo."
+  },
+  "ABS": {
+    "full_name": "Acrilonitrilo Butadieno Estireno (Acrylonitrile Butadiene Styrene)",
+    "density_g_cm3": 1.04,
+    "young_modulus_gpa": 2.30,
+    "young_modulus_mpa": 2300.0,
+    "tensile_strength_mpa": 40.0,
+    "recommended_nozzle_temp_c": [230, 250],
+    "recommended_bed_temp_c": [80, 100],
+    "recommended_speed_structural_mm_s": [40, 60],
+    "behavior_class": "impact_resistant",
+    "description": "Termoplástico tenaz y resistente al calor, ideal para piezas funcionales expuestas a cargas dinámicas.",
+    "mechanical_behavior": "Mayor ductilidad y tenacidad ante impactos que el PLA, pero menor rigidez pura y propenso a deformaciones térmicas durante impresión.",
+    "structural_notes": "Soporta muy bien esfuerzos de flexión y cargas dinámicas de impacto. Requiere cama caliente a alta temperatura (80-100°C) y cámara cerrada para evitar la delaminación y el warping térmico."
+  },
+  "PETG": {
+    "full_name": "Tereftalato de Polietileno Glicol (Polyethylene Terephthalate Glycol)",
+    "density_g_cm3": 1.27,
+    "young_modulus_gpa": 2.10,
+    "young_modulus_mpa": 2100.0,
+    "tensile_strength_mpa": 50.0,
+    "recommended_nozzle_temp_c": [220, 240],
+    "recommended_bed_temp_c": [70, 80],
+    "recommended_speed_structural_mm_s": [40, 50],
+    "behavior_class": "tough_copolymer",
+    "description": "Copoliéster con excelente adhesión entre capas, resistencia química y durabilidad.",
+    "mechanical_behavior": "Excelente adherencia entre capas (interlayer bonding), menor rigidez pura que el PLA pero mucho mayor resistencia al impacto y durabilidad química.",
+    "structural_notes": "Muy equilibrado. La adherencia superior entre capas lo hace ideal para resistir esfuerzos cortantes o compresión fuera del eje vertical."
+  }
+}

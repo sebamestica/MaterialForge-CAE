@@ -1,0 +1,41 @@
+{
+  "title": "Anisotropía en Fabricación FDM",
+  "description": "Reducción de propiedades mecánicas por efecto de laminación y orientación de capa.",
+  "transverse_isotropy_coefficients": {
+    "PLA": {
+      "xy_modulus_gpa": 3.2,
+      "z_modulus_gpa": 1.62,
+      "shear_modulus_gpa": 0.8,
+      "tensile_xy_mpa": 60,
+      "tensile_z_mpa": 25
+    },
+    "TPU": {
+      "xy_modulus_gpa": 0.08,
+      "z_modulus_gpa": 0.05,
+      "shear_modulus_gpa": 0.02,
+      "tensile_xy_mpa": 30,
+      "tensile_z_mpa": 18
+    },
+    "ABS": {
+      "xy_modulus_gpa": 2.3,
+      "z_modulus_gpa": 1.5,
+      "shear_modulus_gpa": 0.6,
+      "tensile_xy_mpa": 40,
+      "tensile_z_mpa": 20
+    },
+    "PETG": {
+      "xy_modulus_gpa": 2.1,
+      "z_modulus_gpa": 1.7,
+      "shear_modulus_gpa": 0.55,
+      "tensile_xy_mpa": 50,
+      "tensile_z_mpa": 32
+    }
+  },
+  "orientation_safety_factors": {
+    "Isotrópica": 1.0,
+    "Anisotrópica X": 0.7,
+    "Anisotrópica Y": 0.7,
+    "Anisotrópica Z": 0.45
+  },
+  "gyroid_continuity_gain": "El patrón gyroid continuo 3D reduce la concentración de esfuerzos de cizalla delaminadora en un 35% en comparación con patrones ortogonales como Grid."
+}

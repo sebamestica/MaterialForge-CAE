@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAFBFC;
+  --foreground: #0F172A;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Custom technical dark scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAFBFC;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1E40AF;
+}
+
+/* Custom 3D rotate container */
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}

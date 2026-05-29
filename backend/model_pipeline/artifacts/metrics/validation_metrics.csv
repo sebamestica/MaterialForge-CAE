@@ -1,0 +1,7 @@
+Model,R2_Validation
+Lasso,0.18013327663266399
+DummyRegressor,-0.00019878081102553402
+Ridge,-0.1618281145464795
+LinearRegression,-0.4389509343756932
+GradientBoostingRegressor,-0.6223589706359784
+RandomForestRegressor,-0.6812316017316018

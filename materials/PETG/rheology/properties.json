@@ -1,0 +1,8 @@
+{
+  "melt_flow_index_g_10min": 22.0,
+  "viscosity_profile": "Alta viscosidad y comportamiento pegajoso en fusión.",
+  "recommended_extrusion_temperature_range": [
+    220,
+    245
+  ]
+}

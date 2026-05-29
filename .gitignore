@@ -1,25 +1,21 @@
-# Node modules
-node_modules/
-dist/
-build/
-.env
-.DS_Store
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-
-# Python
+# Python environment and cache
 __pycache__/
 *.pyc
-venv/
 .venv/
+venv/
+ENV/
 
-# Artifacts/Gemini specific
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+**/logs/
+
+# Agent/AI directory
 .gemini/
-.brain/
-tmp/
-artifacts/
-*.webp
-*.mp4
+
+# Large simulation files
+*.inp
+*.7z

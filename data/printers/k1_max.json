@@ -1,0 +1,38 @@
+{
+  "name": "Creality K1 Max",
+  "manufacturer": "Creality",
+  "firmware": "Klipper-based",
+  "motion_system": "CoreXY",
+  "build_volume": {
+    "x": 300.0,
+    "y": 300.0,
+    "z": 300.0
+  },
+  "origin": "front_left",
+  "hardware": {
+    "nozzle_diameter": 0.4,
+    "max_nozzle_temp": 300.0,
+    "max_bed_temp": 120.0
+  },
+  "motion_limits": {
+    "max_speed": 600.0,
+    "recommended_tpu_speed": [20.0, 45.0],
+    "max_acceleration": 20000.0
+  },
+  "materials": ["TPU", "PLA", "PETG", "ABS", "ASA"],
+  "slicer": {
+    "preferred": "OrcaSlicer"
+  },
+  "manufacturing_constraints": [
+    "TPU debe imprimirse a velocidades lentas para evitar delaminación y obstrucciones en el extrusor directo de alta velocidad.",
+    "El volumen de la pieza no debe exceder los 300x300x300 mm.",
+    "Usar base magnética flexible PEI para facilitar la remoción del TPU sin dañar la cama."
+  ],
+  "tpu_rules": [
+    "Velocidad de impresión recomendada: 20-45 mm/s.",
+    "Temperatura recomendada de boquilla: 225-240 °C.",
+    "Retracción: desactivada o menor a 1.2 mm a 25 mm/s.",
+    "Ventilador de capa: 30-50% para gyroids estables y flujo continuo."
+  ],
+  "supported_exports": ["stl", "3mf", "gcode"]
+}

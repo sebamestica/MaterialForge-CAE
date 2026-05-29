@@ -1,0 +1,32 @@
+{
+  "young_modulus_nominal_gpa": 0.08,
+  "tensile_strength_nominal_mpa": 30.0,
+  "shear_modulus_gpa": 0.025,
+  "poisson_ratio": 0.48,
+  "shore_hardness_variants": {
+    "85A": {
+      "modulus_mpa": 15.0,
+      "yield_strength_mpa": 2.5,
+      "elongation_break_percent": 600.0
+    },
+    "90A": {
+      "modulus_mpa": 45.0,
+      "yield_strength_mpa": 4.5,
+      "elongation_break_percent": 500.0
+    },
+    "95A": {
+      "modulus_mpa": 80.0,
+      "yield_strength_mpa": 8.0,
+      "elongation_break_percent": 450.0
+    }
+  },
+  "hyperelastic_model": {
+    "model_type": "Mooney-Rivlin 2-Parameter",
+    "C10": 3.82,
+    "C01": 0.94,
+    "stress_strain_characteristic": "Altamente no lineal, con alargamiento por fluencia continua y alta ductilidad elástica."
+  },
+  "damping_coefficient": 0.35,
+  "rebound_resilience_percent": 65.0,
+  "compression_behavior": "Pandeo progresivo continuo y elástico de las celdas unitarias. Absorbe energía de forma constante en la región de plateau, con densificación en deformaciones elevadas (>65%)."
+}

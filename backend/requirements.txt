@@ -1,0 +1,20 @@
+# Core API and Web Server
+fastapi
+uvicorn
+pydantic
+
+# Machine Learning & Data Processing
+pandas
+numpy
+scikit-learn
+joblib
+openpyxl
+tabulate
+
+# 3D Geometry and Image Processing
+trimesh
+scikit-image
+
+# Data Visualization and Graphics
+matplotlib
+seaborn

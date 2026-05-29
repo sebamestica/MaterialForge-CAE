@@ -1,0 +1,38 @@
+{
+  "name": "Creality K1C",
+  "manufacturer": "Creality",
+  "firmware": "Klipper-based",
+  "motion_system": "CoreXY",
+  "build_volume": {
+    "x": 220.0,
+    "y": 220.0,
+    "z": 250.0
+  },
+  "origin": "front_left",
+  "hardware": {
+    "nozzle_diameter": 0.4,
+    "max_nozzle_temp": 300.0,
+    "max_bed_temp": 100.0
+  },
+  "motion_limits": {
+    "max_speed": 600.0,
+    "recommended_tpu_speed": [20.0, 40.0],
+    "max_acceleration": 20000.0
+  },
+  "materials": ["TPU", "PLA", "PETG", "ABS", "ASA"],
+  "slicer": {
+    "preferred": "OrcaSlicer"
+  },
+  "manufacturing_constraints": [
+    "Sistema CoreXY de alta velocidad con extrusor directo metálico para flexibles.",
+    "El volumen de la pieza no debe exceder los 220x220x250 mm.",
+    "Boquilla Tri-metal con punta de acero endurecido, ideal para filamentos abrasivos con fibra de carbono."
+  ],
+  "tpu_rules": [
+    "Velocidad de impresión recomendada: 20-40 mm/s.",
+    "Temperatura recomendada de boquilla: 225-240 °C.",
+    "Retracción: menor a 1.2 mm a 25 mm/s.",
+    "Ventilador de capa: 30-50% para gyroids estables y flujo continuo."
+  ],
+  "supported_exports": ["stl", "3mf", "gcode"]
+}

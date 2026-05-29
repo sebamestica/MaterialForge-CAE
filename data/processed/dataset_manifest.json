@@ -1,0 +1,162 @@
+{
+    "generated_at": "2026-05-27T18:10:53.306391",
+    "files_scanned": 26,
+    "sources": {
+        "SRC-86F4F7": {
+            "relative_path": "5.Simulation_Lattice Analysis_Software_Abaqus 2020.inp",
+            "hash": "5d3deca468843f1fb19cefa3da5fd87e1bf6ebedeb4bd822eb70ecbd34ec7868",
+            "dataset_type": "figshare_hybrid_lattice",
+            "status": "success"
+        },
+        "SRC-B87775": {
+            "relative_path": "data.csv",
+            "hash": "b98f601f714f2744dff18f5d1521288306b908b9da7fff3a42ae3d136a916e2d",
+            "dataset_type": "kaggle_3dprinter",
+            "status": "success"
+        },
+        "SRC-2C4E8B": {
+            "relative_path": "Ensayos_Mecanicos_Corrupto_TensionA\\Compressivedata.csv",
+            "hash": "d34a514a8963e19ce740382c010271b51690e1e3d0ddecd3980374984f17372b",
+            "dataset_type": "mendeley_pla_lattice_compression",
+            "status": "success"
+        },
+        "SRC-092EB9": {
+            "relative_path": "Ensayos_Mecanicos_Corrupto_TensionA\\TensiondataB.csv",
+            "hash": "4c3ceac909b092f4ded3db396d222efd7ea6725aab114400e87901657d26b442",
+            "dataset_type": "mendeley_pla_lattice_tension_b",
+            "status": "success"
+        },
+        "SRC-F168A8": {
+            "relative_path": "Ensayos_Mecanicos_Validos\\Compressivedata.csv",
+            "hash": "d34a514a8963e19ce740382c010271b51690e1e3d0ddecd3980374984f17372b",
+            "dataset_type": "mendeley_pla_lattice_compression",
+            "status": "success"
+        },
+        "SRC-3ACB97": {
+            "relative_path": "Ensayos_Mecanicos_Validos\\TensiondataA.csv",
+            "hash": "76e3980325615ca1321a9d67c3ef61056cbe0ab688f2e057afb0072838ff0141",
+            "dataset_type": "mendeley_pla_lattice_tension_a",
+            "status": "success"
+        },
+        "SRC-2E69CB": {
+            "relative_path": "Ensayos_Mecanicos_Validos\\TensiondataB.csv",
+            "hash": "4c3ceac909b092f4ded3db396d222efd7ea6725aab114400e87901657d26b442",
+            "dataset_type": "mendeley_pla_lattice_tension_b",
+            "status": "success"
+        },
+        "SRC-F59A43": {
+            "relative_path": "Mechanical Properties of 3D-Printing Carbon-PLA Filament with Various Printing Directions\\0 Deg.xls",
+            "hash": "f72d6e4d53894b7bc3c86db268a41974f730ebd2fc24c30381d43d8bce67d884",
+            "dataset_type": "mendeley_carbon_pla",
+            "status": "success"
+        },
+        "SRC-10A10A": {
+            "relative_path": "Mechanical Properties of 3D-Printing Carbon-PLA Filament with Various Printing Directions\\15 Deg.xls",
+            "hash": "6ab05e3e7c221ee92ff80f5bc6fd65f48010039282a4b260b46ffc8cbe129013",
+            "dataset_type": "mendeley_carbon_pla",
+            "status": "success"
+        },
+        "SRC-B48AB8": {
+            "relative_path": "Mechanical Properties of 3D-Printing Carbon-PLA Filament with Various Printing Directions\\30 Deg.xls",
+            "hash": "38c09cbded531a70dfe803ed3a1465cf8014ae8bf25fb7e86922bb2c7f80b8ee",
+            "dataset_type": "mendeley_carbon_pla",
+            "status": "success"
+        },
+        "SRC-4F1B6D": {
+            "relative_path": "Mechanical Properties of 3D-Printing Carbon-PLA Filament with Various Printing Directions\\45 Deg.xls",
+            "hash": "056b0d09672d9755c7aad445e0201c29808a2285f56335ec4b34fb34ae04150b",
+            "dataset_type": "mendeley_carbon_pla",
+            "status": "success"
+        },
+        "SRC-5A1C56": {
+            "relative_path": "Mechanical Properties of 3D-Printing Carbon-PLA Filament with Various Printing Directions\\60 Deg.xls",
+            "hash": "fcd6f3d1b1b7699cb054553278ebbf3e7d4848a346ee15acaa8f699e5c7c6d69",
+            "dataset_type": "mendeley_carbon_pla",
+            "status": "success"
+        },
+        "SRC-898ACF": {
+            "relative_path": "Mechanical Properties of 3D-Printing Carbon-PLA Filament with Various Printing Directions\\75 Deg.xls",
+            "hash": "73616de356e183f077f900fb4ddd246815573a3c09d1f51254155f3f50212fe7",
+            "dataset_type": "mendeley_carbon_pla",
+            "status": "success"
+        },
+        "SRC-25A5B9": {
+            "relative_path": "Mechanical Properties of 3D-Printing Carbon-PLA Filament with Various Printing Directions\\90 Deg.xls",
+            "hash": "76b8ca1c328ac997747cd6f8c3941bf7f5c55d0efe0e88db065da9957025e0f6",
+            "dataset_type": "mendeley_carbon_pla",
+            "status": "success"
+        },
+        "SRC-DF787A": {
+            "relative_path": "nvzrft8c7d-2\\Compressivedata.xlsx",
+            "hash": "d4b5cc808a9fc6042a4b340fb7f99b50347a0f749bf12839e90fa1095b51e499",
+            "dataset_type": "mendeley_pla_lattice_compression",
+            "status": "success"
+        },
+        "SRC-8275EE": {
+            "relative_path": "nvzrft8c7d-2\\TensiondataA.xlsx",
+            "hash": "caf1161fa528fc5bde35a997df222a413f6ad28e33ef874c8caac195897aadda",
+            "dataset_type": "mendeley_pla_lattice_tension_a",
+            "status": "success"
+        },
+        "SRC-4ACFCC": {
+            "relative_path": "nvzrft8c7d-2\\TensiondataB.xlsx",
+            "hash": "253430360f6749abe3365d7d4b7be66f94a51718cec03735dfa76774c54c6d0d",
+            "dataset_type": "mendeley_pla_lattice_tension_b",
+            "status": "success"
+        },
+        "SRC-700019": {
+            "relative_path": "Proyecto_Machine_Learning\\data.csv",
+            "hash": "b98f601f714f2744dff18f5d1521288306b908b9da7fff3a42ae3d136a916e2d",
+            "dataset_type": "kaggle_3dprinter",
+            "status": "success"
+        },
+        "SRC-FA1C6F": {
+            "relative_path": "Raw Dataset of tensile engineering stress-strain from advanced polymer architecture fluoroelastomer test inflatable seals, produced by cold feed extrusion and continuous cure and aimed at Gen IV Sodium-cooled Fast Reactor technology\\RAW_ESS_SEALS_CSV\\R_ESS_SEAL-1_CSV\\R_ESS_SEAL-1-120_CSV\\R_ESS_Seal-1-L-R-120.csv",
+            "hash": "c99c1e201ce3e38a776cf0846693d3a7cca91017a3ba3e834e1131c476cf4faa",
+            "dataset_type": "generic_stress_strain",
+            "status": "success"
+        },
+        "SRC-CE52CB": {
+            "relative_path": "Raw Dataset of tensile engineering stress-strain from advanced polymer architecture fluoroelastomer test inflatable seals, produced by cold feed extrusion and continuous cure and aimed at Gen IV Sodium-cooled Fast Reactor technology\\RAW_ESS_SEALS_CSV\\R_ESS_SEAL-1_CSV\\R_ESS_SEAL-1-120_CSV\\R_ESS_Seal-1-U-D-120.csv",
+            "hash": "bc3e050afdc4dc0c26cc9a3c8a8c1e1e09ca8e36e44cf457b99d5eee5227daad",
+            "dataset_type": "generic_stress_strain",
+            "status": "success"
+        },
+        "SRC-8C40A0": {
+            "relative_path": "Raw Dataset of tensile engineering stress-strain from advanced polymer architecture fluoroelastomer test inflatable seals, produced by cold feed extrusion and continuous cure and aimed at Gen IV Sodium-cooled Fast Reactor technology\\RAW_ESS_SEALS_CSV\\R_ESS_SEAL-1_CSV\\R_ESS_SEAL-1-RT_CSV\\R_ESS_Seal-1-L-R-RT.csv",
+            "hash": "5e9d998a468eade59dabbcd3d3f0fa262d0befb69a97ae2131137c8ee9b75108",
+            "dataset_type": "generic_stress_strain",
+            "status": "success"
+        },
+        "SRC-FD9C7C": {
+            "relative_path": "Raw Dataset of tensile engineering stress-strain from advanced polymer architecture fluoroelastomer test inflatable seals, produced by cold feed extrusion and continuous cure and aimed at Gen IV Sodium-cooled Fast Reactor technology\\RAW_ESS_SEALS_CSV\\R_ESS_SEAL-1_CSV\\R_ESS_SEAL-1-RT_CSV\\R_ESS_Seal-1-U-D-RT.csv",
+            "hash": "20cd05b44a073231eb210e4ef47cdc2af3290a92851a14c8ecb1f6cd3360bd8b",
+            "dataset_type": "generic_stress_strain",
+            "status": "success"
+        },
+        "SRC-6B8BDB": {
+            "relative_path": "Raw Dataset of tensile engineering stress-strain from advanced polymer architecture fluoroelastomer test inflatable seals, produced by cold feed extrusion and continuous cure and aimed at Gen IV Sodium-cooled Fast Reactor technology\\RAW_ESS_SEALS_CSV\\R_ESS_SEAL-2_CSV\\R_ESS_SEAL-2-120_CSV\\R_ESS_Seal-2-L-R-120.csv",
+            "hash": "81f8110880e071e077b0713b0a177288dfa565f1272222cb0775dc1e0a28f030",
+            "dataset_type": "generic_stress_strain",
+            "status": "success"
+        },
+        "SRC-CD84E3": {
+            "relative_path": "Raw Dataset of tensile engineering stress-strain from advanced polymer architecture fluoroelastomer test inflatable seals, produced by cold feed extrusion and continuous cure and aimed at Gen IV Sodium-cooled Fast Reactor technology\\RAW_ESS_SEALS_CSV\\R_ESS_SEAL-2_CSV\\R_ESS_SEAL-2-120_CSV\\R_ESS_Seal-2-U-D-120.csv",
+            "hash": "5bd47ac9cbe367744bd78cb113e4fc2aab4f5bdb90d8e3903b210d589ed61a2b",
+            "dataset_type": "generic_stress_strain",
+            "status": "success"
+        },
+        "SRC-4DF78A": {
+            "relative_path": "Raw Dataset of tensile engineering stress-strain from advanced polymer architecture fluoroelastomer test inflatable seals, produced by cold feed extrusion and continuous cure and aimed at Gen IV Sodium-cooled Fast Reactor technology\\RAW_ESS_SEALS_CSV\\R_ESS_SEAL-2_CSV\\R_ESS_SEAL-2-RT_CSV\\R_ESS_Seal-2-L-R-RT.csv",
+            "hash": "86c58d323ce184dfecd042c522c941593175d3b4f027082097523b57e2fad234",
+            "dataset_type": "generic_stress_strain",
+            "status": "success"
+        },
+        "SRC-CA0DCD": {
+            "relative_path": "Raw Dataset of tensile engineering stress-strain from advanced polymer architecture fluoroelastomer test inflatable seals, produced by cold feed extrusion and continuous cure and aimed at Gen IV Sodium-cooled Fast Reactor technology\\RAW_ESS_SEALS_CSV\\R_ESS_SEAL-2_CSV\\R_ESS_SEAL-2-RT_CSV\\R_ESS_Seal-2-U-D-RT.csv",
+            "hash": "1fc53e525b4434b2fdd35bed21a7e1df4aab347ff4cd6ca338a3faba7422f415",
+            "dataset_type": "generic_stress_strain",
+            "status": "success"
+        }
+    }
+}

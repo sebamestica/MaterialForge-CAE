@@ -1,0 +1,7 @@
+{
+  "layer_adhesion_strength_factor_0_to_1": 0.85,
+  "bridging_limit_mm": 5.0,
+  "overhang_angle_limit_deg": 45.0,
+  "stringing_index_1_to_10": 9,
+  "pressure_advance_sensitivity": "Extremadamente alta (requiere valores de 0.4 a 1.2 s para compensar la elasticidad en el tubo)."
+}

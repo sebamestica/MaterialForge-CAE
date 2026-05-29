@@ -1,0 +1,69 @@
+{
+  "title": "Efectos Ambientales y Degradación",
+  "moisture_absorption": {
+    "PLA": {
+      "rate_percent_24h": 0.15,
+      "saturation_limit_percent": 0.8,
+      "tensile_loss_saturated": 0.15,
+      "description": "Bajo, pero causa hidrólisis a temperaturas de fusión, produciendo burbujas y fragilidad excesiva."
+    },
+    "TPU": {
+      "rate_percent_24h": 0.65,
+      "saturation_limit_percent": 1.8,
+      "tensile_loss_saturated": 0.25,
+      "description": "Alto. Al ser hidrofílico, requiere secado previo estricto (4h a 65°C). Provoca defectos por burbujas de vapor en boquilla."
+    },
+    "ABS": {
+      "rate_percent_24h": 0.25,
+      "saturation_limit_percent": 1.1,
+      "tensile_loss_saturated": 0.1,
+      "description": "Moderado. Causa defectos estéticos y porosidad intercapa."
+    },
+    "PETG": {
+      "rate_percent_24h": 0.35,
+      "saturation_limit_percent": 1.3,
+      "tensile_loss_saturated": 0.2,
+      "description": "Alto. La humedad causa hidrólisis y debilita severamente la adherencia entre capas (hasta un 40% de pérdida de adhesión)."
+    }
+  },
+  "uv_resistance": {
+    "PLA": {
+      "index_1_10": 3,
+      "rating": "Pobre",
+      "degradation_mechanism": "Fotomordentado por rayos UV, causa decoloración, amarillamiento y fragilidad extrema."
+    },
+    "TPU": {
+      "index_1_10": 7,
+      "rating": "Bueno",
+      "degradation_mechanism": "Sufre ligera decoloración superficial, pero mantiene resiliencia mecánica elástica."
+    },
+    "ABS": {
+      "index_1_10": 2,
+      "rating": "Muy Pobre",
+      "degradation_mechanism": "Degradación por fotooxidación rápida. El butadieno se oxida, haciendo que el material se fragilice y agriete."
+    },
+    "PETG": {
+      "index_1_10": 6,
+      "rating": "Moderado",
+      "degradation_mechanism": "Estable ante UV moderado, apto para aplicaciones exteriores semi-protegidas."
+    }
+  },
+  "long_term_creep": {
+    "PLA": {
+      "relaxation_modulus_ratio_1000h": 0.4,
+      "warping_risk": "Alto bajo carga estática permanente a >45°C."
+    },
+    "TPU": {
+      "relaxation_modulus_ratio_1000h": 0.85,
+      "warping_risk": "Excelente resistencia a la deformación plástica permanente (creep) a temperatura ambiente."
+    },
+    "ABS": {
+      "relaxation_modulus_ratio_1000h": 0.7,
+      "warping_risk": "Moderado. Estable a temperaturas <75°C."
+    },
+    "PETG": {
+      "relaxation_modulus_ratio_1000h": 0.55,
+      "warping_risk": "Sensible a cargas estáticas continuas de tracción a largo plazo."
+    }
+  }
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "brand": "Prusament",
+    "name": "ABS",
+    "shore_hardness": "78D",
+    "specialty": "Excelente tolerancia dimensional."
+  },
+  {
+    "brand": "eSUN",
+    "name": "ABS+",
+    "shore_hardness": "75D",
+    "specialty": "Fórmula modificada con baja contracción térmica."
+  },
+  {
+    "brand": "Polymaker",
+    "name": "PolyLite ABS",
+    "shore_hardness": "76D",
+    "specialty": "Alta resistencia al impacto y estabilidad."
+  }
+]

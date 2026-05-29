@@ -1,0 +1,7 @@
+{
+  "layer_adhesion_strength_factor_0_to_1": 0.92,
+  "bridging_limit_mm": 10.0,
+  "overhang_angle_limit_deg": 45.0,
+  "stringing_index_1_to_10": 8,
+  "pressure_advance_sensitivity": "Alta (rango 0.12 a 0.25, gotea si no está calibrado)."
+}

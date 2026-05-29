@@ -1,7 +1,0 @@
-{
-    "model_pipeline_data_dir": "../model_pipeline/data",
-    "target": "compressive_strength",
-    "cv_folds": 5,
-    "scoring_metric": "neg_mean_absolute_error",
-    "random_state": 42
-}
