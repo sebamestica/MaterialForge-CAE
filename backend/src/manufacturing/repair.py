@@ -18,7 +18,7 @@ def repair_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
             trimesh.repair.fill_holes(repaired)
             
         # 3. Clean degenerate triangles
-        repaired.remove_degenerate_faces()
+        repaired.update_faces(repaired.nondegenerate_faces())
         repaired.remove_infinite_values()
         repaired.remove_unreferenced_vertices()
         

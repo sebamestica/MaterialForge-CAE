@@ -292,7 +292,8 @@ export const useLabStore = create<LabState>((set, get) => ({
     // If changing physical properties, trigger debounced updates
     const triggerKeys = [
       "dimX", "dimY", "dimZ", "wallThickness", "material",
-      "pattern", "infill", "cellSize", "cellThickness", "layerHeight", "printSpeed"
+      "pattern", "infill", "cellSize", "cellThickness", "layerHeight", "printSpeed",
+      "resolution", "shellLayers", "edgeRounding", "orientation"
     ];
 
     if (triggerKeys.includes(key as string)) {

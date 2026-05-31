@@ -107,7 +107,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
 from keras.layers import Input, Dense, Flatten
 from keras.optimizers import SGD
-from keras.layers.normalization import BatchNormalization
+from keras.layers import BatchNormalization
 
 model = Sequential()
 model.add(Dense(32,input_dim=11))
@@ -139,9 +139,10 @@ a10 = 30 #tension_strenght
 a11 = 200 #elangation*100
 
 tahmin = np.array([a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11]).reshape(1,11)
-print(model.predict_classes(tahmin))
+pred_class = np.argmax(model.predict(tahmin), axis=-1)[0]
+print(pred_class)
 
-if model.predict_classes(tahmin) == 0: 
+if pred_class == 0: 
     print("Kullanılan malzeme ABS'dir.")
 else:   
     print("Kullanılan malzeme PLA'dır.")

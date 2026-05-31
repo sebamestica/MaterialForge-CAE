@@ -480,7 +480,7 @@ def compile_trimesh_geometry(payload: STLOptPayload, for_stl: bool) -> trimesh.T
         trimesh.repair.fix_winding(mesh)
         if not mesh.is_watertight:
             trimesh.repair.fill_holes(mesh)
-        mesh.remove_degenerate_faces()
+        mesh.update_faces(mesh.nondegenerate_faces())
         mesh.remove_infinite_values()
         mesh.remove_unreferenced_vertices()
     except Exception as e:
