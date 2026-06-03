@@ -18,7 +18,6 @@ export default function VariantCard({ variant, isActive, onSelect }: VariantCard
     runSimulation,
     duplicateVariant,
     exportVariant,
-    compareMode
   } = useDesignStore();
 
   const handleApply = async (e: React.MouseEvent) => {
@@ -49,27 +48,27 @@ export default function VariantCard({ variant, isActive, onSelect }: VariantCard
   };
 
   const riskColors = {
-    LOW: "text-emerald-400 border-emerald-950 bg-emerald-950/20",
-    MEDIUM: "text-amber-400 border-amber-950 bg-amber-950/20",
-    HIGH: "text-rose-400 border-rose-950 bg-rose-950/20"
+    LOW: "text-emerald-700 border-emerald-250 bg-emerald-50/50",
+    MEDIUM: "text-amber-800 border-amber-250 bg-amber-50/50",
+    HIGH: "text-rose-700 border-rose-250 bg-rose-50/50"
   };
 
   return (
     <div
       onClick={onSelect}
-      className={`p-3.5 rounded-lg border transition-all duration-200 cursor-pointer font-mono text-[11px] select-none ${
+      className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer font-sans text-xs select-none shadow-3xs ${
         isActive
-          ? "bg-slate-900/90 border-slate-700 shadow-md"
-          : "bg-slate-950/40 border-slate-850 hover:bg-slate-900/40 hover:border-slate-800"
+          ? "bg-blue-50/40 border-blue-400 shadow-md shadow-blue-500/5 ring-1 ring-blue-400/20"
+          : "bg-white border-slate-200 hover:bg-slate-50/50 hover:border-slate-350"
       }`}
     >
       {/* Title & Risk */}
-      <div className="flex justify-between items-start gap-2 mb-2">
+      <div className="flex justify-between items-start gap-2 mb-2.5">
         <div>
-          <h4 className="font-extrabold text-slate-100 text-xs tracking-tight">{variant.name}</h4>
-          <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{variant.description}</p>
+          <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">{variant.name}</h4>
+          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{variant.description}</p>
         </div>
-        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black border uppercase tracking-wider shrink-0 ${
+        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-wider shrink-0 ${
           riskColors[variant.risk_level] || riskColors.LOW
         }`}>
           {variant.risk_level}
@@ -77,10 +76,10 @@ export default function VariantCard({ variant, isActive, onSelect }: VariantCard
       </div>
 
       {/* Main Score Bar */}
-      <div className="bg-slate-950/70 p-2.5 rounded border border-slate-850/80 mb-3 flex items-center justify-between">
-        <span className="text-slate-500 uppercase font-black text-[9px] tracking-wider">Score Estructural</span>
+      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 mb-3.5 flex items-center justify-between">
+        <span className="text-slate-500 uppercase font-extrabold text-[9px] tracking-wider">Score Estructural</span>
         <div className="flex items-center gap-2">
-          <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full ${
                 variant.score >= 85 ? "bg-emerald-500" : variant.score >= 65 ? "bg-amber-500" : "bg-rose-500"
@@ -88,52 +87,52 @@ export default function VariantCard({ variant, isActive, onSelect }: VariantCard
               style={{ width: `${variant.score}%` }}
             />
           </div>
-          <span className="font-black text-white text-xs">{variant.score}/100</span>
+          <span className="font-black text-slate-800 text-xs">{variant.score}/100</span>
         </div>
       </div>
 
       {/* Sub-scores Grid */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[10px] text-slate-400 mb-3.5 border-b border-slate-850/60 pb-3">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-slate-600 mb-3 border-b border-slate-200/80 pb-3">
         <div className="flex justify-between items-center">
-          <span className="text-slate-500">Compresión:</span>
-          <span className="font-bold text-slate-200">{variant.compression_score}</span>
+          <span className="text-slate-500 font-medium">Compresión:</span>
+          <span className="font-bold text-slate-800">{variant.compression_score}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-slate-500">Estabilidad:</span>
-          <span className="font-bold text-slate-200">{variant.stability_score}</span>
+          <span className="text-slate-500 font-medium">Estabilidad:</span>
+          <span className="font-bold text-slate-800">{variant.stability_score}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-slate-500">Absorción:</span>
-          <span className="font-bold text-slate-200">{variant.energy_absorption_score}</span>
+          <span className="text-slate-500 font-medium">Absorción:</span>
+          <span className="font-bold text-slate-800">{variant.energy_absorption_score}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-slate-500">Imprimibilidad:</span>
-          <span className="font-bold text-slate-200">{variant.printability_score}</span>
+          <span className="text-slate-500 font-medium">Imprimibilidad:</span>
+          <span className="font-bold text-slate-800">{variant.printability_score}</span>
         </div>
       </div>
 
       {/* KPIs: Mass & Print Time */}
-      <div className="grid grid-cols-2 gap-2 text-[9px] text-slate-500 mb-3">
+      <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mb-3.5">
         <div>
-          <span>Masa Est:</span> <b className="text-slate-300">{variant.estimated_mass}</b>
+          <span>Masa Est:</span> <b className="text-slate-700">{variant.estimated_mass}</b>
         </div>
         <div>
-          <span>Tiempo Est:</span> <b className="text-slate-300">{variant.estimated_print_time}</b>
+          <span>Tiempo Est:</span> <b className="text-slate-700">{variant.estimated_print_time}</b>
         </div>
       </div>
 
       {/* Pros & Cons (Sleek Collapsible or Mini List) */}
       {(variant.pros.length > 0 || variant.cons.length > 0) && (
-        <div className="space-y-1.5 border-t border-slate-900 pt-2.5 mb-3 text-[9px] text-slate-450 leading-relaxed">
+        <div className="space-y-1.5 border-t border-slate-100 pt-2.5 mb-3.5 text-xs text-slate-600 leading-normal">
           {variant.pros.slice(0, 2).map((p, idx) => (
             <div key={idx} className="flex items-start gap-1">
-              <span className="text-emerald-500 font-bold shrink-0">+</span>
+              <span className="text-emerald-600 font-bold shrink-0">+</span>
               <span>{p}</span>
             </div>
           ))}
           {variant.cons.slice(0, 1).map((c, idx) => (
             <div key={idx} className="flex items-start gap-1">
-              <span className="text-rose-500 font-bold shrink-0">-</span>
+              <span className="text-rose-600 font-bold shrink-0">-</span>
               <span>{c}</span>
             </div>
           ))}
@@ -142,45 +141,47 @@ export default function VariantCard({ variant, isActive, onSelect }: VariantCard
 
       {/* Warnings Badges */}
       {variant.warnings.length > 0 && (
-        <div className="flex items-center gap-1 text-[8px] text-amber-500 bg-amber-950/10 border border-amber-900/30 p-1.5 rounded mb-3">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+        <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg mb-3.5 font-sans">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
           <span className="truncate">{variant.warnings[0]}</span>
         </div>
       )}
 
       {/* Minimalist Action Controls */}
-      <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-850/80">
+      <div className="flex items-center gap-1.5 pt-2.5 border-t border-slate-200/80">
         <button
           onClick={handleApply}
-          className="px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-650 rounded cursor-pointer transition-colors"
+          className="flex-1 py-2 text-[10px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-700 border border-blue-600 rounded-lg cursor-pointer transition-all shadow-sm shadow-blue-500/5 text-center flex items-center justify-center gap-1"
         >
-          apply
+          <Check className="w-3.5 h-3.5" />
+          <span>Aplicar</span>
         </button>
         <button
           onClick={handleCompare}
-          className="px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-650 rounded cursor-pointer transition-colors"
+          className="px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200 rounded-lg cursor-pointer transition-all text-center"
         >
-          compare
+          Comparar
         </button>
         <button
           onClick={handleSimulate}
-          className="px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-650 rounded cursor-pointer transition-colors"
+          className="px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200 rounded-lg cursor-pointer transition-all text-center flex items-center justify-center gap-1"
         >
-          simulate
+          <Play className="w-3 h-3 text-slate-500 fill-slate-500" />
+          <span>Simular</span>
         </button>
         <button
           onClick={handleCopy}
-          className="p-1 text-slate-400 hover:text-slate-200 border border-slate-800 rounded bg-slate-900/30 hover:bg-slate-800 transition-colors cursor-pointer"
-          title="copy config patch"
+          className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg bg-white transition-all cursor-pointer flex items-center justify-center shrink-0"
+          title="Copiar parche de configuración"
         >
-          <Copy className="w-2.5 h-2.5" />
+          <Copy className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleExport}
-          className="p-1 text-slate-400 hover:text-slate-200 border border-slate-800 rounded bg-slate-900/30 hover:bg-slate-800 transition-colors cursor-pointer"
-          title="export variant JSON"
+          className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg bg-white transition-all cursor-pointer flex items-center justify-center shrink-0"
+          title="Exportar variante en JSON"
         >
-          <Download className="w-2.5 h-2.5" />
+          <Download className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

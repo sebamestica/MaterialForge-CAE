@@ -198,7 +198,7 @@ export default function LeftPanel() {
                 <span className="text-slate-500 font-bold text-sm cursor-help" title="Dimensiones físicas del bloque en centímetros. Límites permitidos: 1.0 cm a 15.0 cm. Afecta el volumen final y la masa total.">Dimensiones del Bounding Box ⓘ</span>
                 <div className="grid grid-cols-3 gap-2.5">
                   <div>
-                    <span className="text-xs text-slate-400 block mb-0.5 text-center font-extrabold">ANCHO X (cm)</span>
+                    <span className="text-xs text-slate-400 block mb-0.5 text-center font-extrabold">ANCHO X<br/>(cm)</span>
                     <input
                       type="number"
                       value={store.dimX.toFixed(1)}
@@ -207,7 +207,7 @@ export default function LeftPanel() {
                     />
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 block mb-0.5 text-center font-extrabold">LARGO Y (cm)</span>
+                    <span className="text-xs text-slate-400 block mb-0.5 text-center font-extrabold">LARGO Y<br/>(cm)</span>
                     <input
                       type="number"
                       value={store.dimY.toFixed(1)}
@@ -216,7 +216,7 @@ export default function LeftPanel() {
                     />
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 block mb-0.5 text-center font-extrabold">ALTO Z (cm)</span>
+                    <span className="text-xs text-slate-400 block mb-0.5 text-center font-extrabold">ALTO Z<br/>(cm)</span>
                     <input
                       type="number"
                       value={store.dimZ.toFixed(1)}

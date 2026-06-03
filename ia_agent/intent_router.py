@@ -63,8 +63,16 @@ class IntentRouter:
                 "required_tools": ["config_recommender"]
             }
 
+        # Casual chat/greeting
+        if any(w in q for w in ["hola", "buenos días", "buenos dias", "buenas tardes", "buenas noches", "hello", "hi", "que tal", "qué tal", "cómo estás", "como estas"]):
+            return {
+                "intent": "casual_chat",
+                "confidence": 0.95,
+                "required_tools": []
+            }
+
         # Explain/General inquiry
-        if any(w in q for w in ["explicar", "explica", "qué es", "cómo funciona", "ayuda", "hola", "buenos días"]):
+        if any(w in q for w in ["explicar", "explica", "qué es", "cómo funciona", "ayuda"]):
             return {
                 "intent": "explain",
                 "confidence": 0.80,

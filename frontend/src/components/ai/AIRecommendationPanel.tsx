@@ -83,32 +83,32 @@ export default function AIRecommendationPanel() {
   const activeVariants = aiRecommendations?.variants || variants || [];
 
   return (
-    <div className="flex flex-col h-full bg-slate-950/20 border border-slate-800 rounded-lg p-4 space-y-4 overflow-y-auto font-mono text-[10px] scrollbar-thin scrollbar-thumb-slate-800">
+    <div className="flex flex-col h-full bg-white border border-slate-200 rounded-lg p-4 space-y-4 overflow-y-auto font-sans text-xs scrollbar-thin scrollbar-thumb-slate-200">
       
       {/* 1. Header */}
-      <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-        <span className="font-extrabold uppercase text-[10px] tracking-wider text-slate-200 flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-blue-500" />
+      <div className="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <span className="font-extrabold uppercase text-xs tracking-wider text-slate-800 flex items-center gap-1.5">
+          <Activity className="w-4 h-4 text-blue-600 animate-pulse" />
           Métricas de Co-Diseño CAE
         </span>
-        <span className="text-[8px] bg-slate-900 border border-slate-850 px-1.5 py-0.5 rounded text-slate-500 uppercase tracking-widest font-black">
+        <span className="text-[9px] bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md text-slate-650 uppercase tracking-wider font-bold">
           scoring v1
         </span>
       </div>
 
       {/* 2. Active Design Score Card */}
-      <div className="bg-slate-950/60 border border-slate-800 p-3 rounded-md space-y-2">
+      <div className="bg-slate-50 border border-slate-250/70 p-3.5 rounded-xl space-y-3 shadow-3xs">
         <div className="flex justify-between items-center">
-          <span className="text-slate-500 font-bold uppercase text-[8px] tracking-wider">Score Estructural Actual</span>
-          <span className={`text-sm font-black ${
-            scores.overall >= 75 ? "text-emerald-400" : scores.overall >= 50 ? "text-amber-400" : "text-rose-400"
+          <span className="text-slate-500 font-extrabold uppercase text-[10px] tracking-wider">Score Estructural Actual</span>
+          <span className={`text-base font-black ${
+            scores.overall >= 75 ? "text-emerald-600" : scores.overall >= 50 ? "text-amber-600" : "text-rose-600"
           }`}>
             {scores.overall}/100
           </span>
         </div>
         
         {/* Progress bar */}
-        <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
               scores.overall >= 75 ? "bg-emerald-500" : scores.overall >= 50 ? "bg-amber-500" : "bg-rose-500"
@@ -118,30 +118,30 @@ export default function AIRecommendationPanel() {
         </div>
 
         {/* Breakdown */}
-        <div className="grid grid-cols-3 gap-1.5 pt-1.5 text-[8px] text-slate-400">
-          <div className="bg-slate-900/50 p-1.5 rounded border border-slate-900">
-            <span className="block text-slate-500">Comp. (40%)</span>
-            <span className="font-bold text-slate-200">{scores.compression}</span>
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-3xs">
+            <span className="block text-slate-400 text-[9px] uppercase font-bold leading-tight">Comp. (40%)</span>
+            <span className="font-bold text-slate-800 text-sm">{scores.compression}</span>
           </div>
-          <div className="bg-slate-900/50 p-1.5 rounded border border-slate-900">
-            <span className="block text-slate-500">Est. (20%)</span>
-            <span className="font-bold text-slate-200">{scores.stability}</span>
+          <div className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-3xs">
+            <span className="block text-slate-400 text-[9px] uppercase font-bold leading-tight">Est. (20%)</span>
+            <span className="font-bold text-slate-800 text-sm">{scores.stability}</span>
           </div>
-          <div className="bg-slate-900/50 p-1.5 rounded border border-slate-900">
-            <span className="block text-slate-500">Abs. (15%)</span>
-            <span className="font-bold text-slate-200">{scores.absorption}</span>
+          <div className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-3xs">
+            <span className="block text-slate-400 text-[9px] uppercase font-bold leading-tight">Abs. (15%)</span>
+            <span className="font-bold text-slate-800 text-sm">{scores.absorption}</span>
           </div>
-          <div className="bg-slate-900/50 p-1.5 rounded border border-slate-900">
-            <span className="block text-slate-500">Mfg. (10%)</span>
-            <span className="font-bold text-slate-200">{scores.manufacturability}</span>
+          <div className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-3xs">
+            <span className="block text-slate-400 text-[9px] uppercase font-bold leading-tight">Mfg. (10%)</span>
+            <span className="font-bold text-slate-800 text-sm">{scores.manufacturability}</span>
           </div>
-          <div className="bg-slate-900/50 p-1.5 rounded border border-slate-900">
-            <span className="block text-slate-500">Imp. (10%)</span>
-            <span className="font-bold text-slate-200">{scores.printability}</span>
+          <div className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-3xs">
+            <span className="block text-slate-400 text-[9px] uppercase font-bold leading-tight">Imp. (10%)</span>
+            <span className="font-bold text-slate-800 text-sm">{scores.printability}</span>
           </div>
-          <div className="bg-slate-900/50 p-1.5 rounded border border-slate-900">
-            <span className="block text-slate-500">Efic. (5%)</span>
-            <span className="font-bold text-slate-200">{scores.efficiency}</span>
+          <div className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-3xs">
+            <span className="block text-slate-400 text-[9px] uppercase font-bold leading-tight">Efic. (5%)</span>
+            <span className="font-bold text-slate-800 text-sm">{scores.efficiency}</span>
           </div>
         </div>
       </div>
@@ -156,46 +156,46 @@ export default function AIRecommendationPanel() {
       <AISimulationCard />
 
       {/* 6. Generative Candidates List */}
-      <div className="space-y-2">
-        <span className="font-black text-slate-400 uppercase text-[9px] tracking-wider block">
+      <div className="space-y-2.5">
+        <span className="font-black text-slate-500 uppercase text-[10px] tracking-wider block">
           Candidatos Estructurales
         </span>
         <VariantList variants={activeVariants} />
       </div>
 
       {/* 7. Change History Logs */}
-      <div className="border-t border-slate-800 pt-3 space-y-2">
-        <div className="flex justify-between items-center text-[9px] uppercase font-black text-slate-450">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
+      <div className="border-t border-slate-200 pt-4 space-y-2.5">
+        <div className="flex justify-between items-center text-[10px] uppercase font-black text-slate-500">
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-slate-400" />
             Registro de Operaciones
           </span>
           {variantHistory.length > 0 && (
             <button
               onClick={revertLastPatch}
               disabled={loading}
-              className="text-[8px] text-amber-500 hover:text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer disabled:opacity-40 uppercase font-black tracking-wide"
+              className="text-[9px] text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-0.5 cursor-pointer disabled:opacity-40 uppercase font-black tracking-wide"
             >
-              <RotateCcw className="w-2.5 h-2.5" />
-              <span>undo</span>
+              <RotateCcw className="w-3 h-3" />
+              <span>Deshacer</span>
             </button>
           )}
         </div>
 
-        <div className="max-h-[90px] overflow-y-auto space-y-1.5 text-[8px] text-slate-550 scrollbar-thin scrollbar-thumb-slate-900">
+        <div className="max-h-[100px] overflow-y-auto space-y-1.5 text-xs text-slate-600 scrollbar-thin scrollbar-thumb-slate-200">
           {variantHistory.length > 0 ? (
             variantHistory.slice().reverse().map((h, idx) => (
-              <div key={idx} className="flex justify-between bg-slate-950/40 p-1.5 px-2.5 rounded border border-slate-900">
-                <span>
-                  {h.action === "applied_config" ? "🛠 applied patch" : "↩ reverted snapshot"}
+              <div key={idx} className="flex justify-between bg-slate-50 p-2 px-3 rounded-lg border border-slate-200/60 font-mono text-[10px]">
+                <span className="text-slate-700">
+                  {h.action === "applied_config" ? "🛠 parche aplicado" : "↩ snapshot revertido"}
                 </span>
-                <span className="text-slate-650">
+                <span className="text-slate-400">
                   {new Date(h.timestamp).toLocaleTimeString()}
                 </span>
               </div>
             ))
           ) : (
-            <p className="italic text-slate-600 text-[9px] text-center p-2 border border-slate-900/60 rounded border-dashed">
+            <p className="italic text-slate-400 text-xs text-center p-3.5 border border-slate-200 border-dashed rounded-lg bg-slate-50/50">
               No hay acciones registradas en esta sesión.
             </p>
           )}

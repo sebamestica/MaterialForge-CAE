@@ -314,7 +314,7 @@ export default function CopilotWidget() {
       {/* 2. Main Window */}
       {isOpen && (
         <div
-          className={`flex flex-col bg-slate-900/95 text-white rounded-xl shadow-2xl border border-slate-700/50 backdrop-blur-md transition-all duration-350 ease-out
+          className={`flex flex-col bg-white text-slate-800 rounded-xl shadow-2xl border border-slate-200 backdrop-blur-md transition-all duration-350 ease-out
             ${
               isExpanded
                 ? "w-[95vw] h-[85vh] md:w-[960px] md:h-[680px]"
@@ -323,41 +323,41 @@ export default function CopilotWidget() {
           `}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-950/80 rounded-t-xl border-b border-slate-800">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-650 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
-                <Sparkles className="w-4 h-4 text-blue-100" />
+          <div className="flex items-center justify-between px-4 py-3.5 bg-slate-50 rounded-t-xl border-b border-slate-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
+                <Sparkles className="w-4.5 h-4.5 text-blue-100 animate-pulse" />
               </div>
               <div>
-                <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-100">
+                <h3 className="text-xs md:text-sm font-black uppercase tracking-wider text-slate-900">
                   MaterialForge Copilot
                 </h3>
-                <p className="text-[9px] text-slate-400">
+                <p className="text-[10px] md:text-xs text-slate-500 font-medium">
                   {bestModel ? `${bestModel} • ` : ""}
                   {healthStatus === "online" ? (
-                    <span className="text-emerald-400 font-semibold">● Local AI Conectada</span>
+                    <span className="text-emerald-600 font-semibold">● Local AI Conectada</span>
                   ) : healthStatus === "degraded" ? (
-                    <span className="text-amber-400 font-semibold">▲ Degradado (Sin Ollama)</span>
+                    <span className="text-amber-600 font-semibold">▲ Degradado (Sin Ollama)</span>
                   ) : (
-                    <span className="text-red-400 font-semibold">○ Desconectado</span>
+                    <span className="text-red-500 font-semibold">○ Desconectado</span>
                   )}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1.5">
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1.5 hover:bg-slate-850 rounded-md text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-slate-200/80 rounded-md text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
                 title={isExpanded ? "Reducir ventana" : "Expandir Panel de Ingeniería"}
               >
-                {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 hover:bg-slate-850 rounded-md text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-slate-200/80 rounded-md text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4.5 h-4.5" />
               </button>
             </div>
           </div>
@@ -365,7 +365,7 @@ export default function CopilotWidget() {
           {/* Split Container Layout */}
           <div className="flex flex-1 overflow-hidden">
             {/* Left Column: Conversational Chat */}
-            <div className="flex-1 flex flex-col min-w-0 p-3 bg-slate-900/60">
+            <div className="flex-1 flex flex-col min-w-0 p-3.5 bg-slate-50/50">
               <AIChatPanel
                 messages={messages}
                 input={input}
@@ -377,25 +377,25 @@ export default function CopilotWidget() {
 
             {/* Right Column: Advanced Engineering Panel */}
             {isExpanded && (
-              <div className="w-[460px] border-l border-slate-800 bg-slate-950/60 p-3 overflow-y-auto flex flex-col space-y-3">
+              <div className="w-[460px] border-l border-slate-200 bg-slate-50/70 p-3.5 overflow-y-auto flex flex-col space-y-4">
                 {/* Tabs Header */}
-                <div className="flex bg-slate-950/80 border border-slate-800/80 p-0.5 rounded-lg text-xs shrink-0 select-none">
+                <div className="flex bg-slate-200/60 border border-slate-200/80 p-1 rounded-lg text-xs shrink-0 select-none font-medium">
                   <button
                     onClick={() => setRightPanelTab("cae")}
-                    className={`flex-1 py-1 text-[9px] font-bold rounded-md uppercase tracking-wider transition-all cursor-pointer text-center ${
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md uppercase tracking-wider transition-all cursor-pointer text-center ${
                       rightPanelTab === "cae"
-                        ? "bg-slate-800 text-slate-200 border border-slate-700/50 shadow-xs"
-                        : "text-slate-500 hover:text-slate-350"
+                        ? "bg-white text-[#1E40AF] border border-slate-200 shadow-3xs"
+                        : "text-slate-500 hover:text-slate-700"
                     }`}
                   >
                     CAE / Co-Diseño
                   </button>
                   <button
                     onClick={() => setRightPanelTab("manufacturing")}
-                    className={`flex-1 py-1 text-[9px] font-bold rounded-md uppercase tracking-wider transition-all cursor-pointer text-center ${
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md uppercase tracking-wider transition-all cursor-pointer text-center ${
                       rightPanelTab === "manufacturing"
-                        ? "bg-slate-800 text-slate-200 border border-slate-700/50 shadow-xs"
-                        : "text-slate-500 hover:text-slate-350"
+                        ? "bg-white text-[#1E40AF] border border-slate-200 shadow-3xs"
+                        : "text-slate-500 hover:text-slate-700"
                     }`}
                   >
                     Impresión FDM

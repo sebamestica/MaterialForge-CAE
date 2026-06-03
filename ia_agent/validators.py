@@ -1,3 +1,4 @@
+import re
 from typing import Dict, Any, List, Tuple
 from .tools.physics_calculator import PhysicsCalculator
 
@@ -235,3 +236,82 @@ def validate_config_patch(current_config: Dict[str, Any], config_patch: Dict[str
         "limit_report": limit_report,
         "corrected_patch": corrected_patch
     }
+
+def sanitize_input_text(text: str) -> str:
+    """
+    Sanitizes user input text by removing/escaping dangerous characters and limiting length.
+    """
+    if not text:
+        return ""
+    
+    # 1. Truncate length to avoid context overflow / DOS (max 1000 characters)
+    text = text[:1000]
+    
+    # 2. Strip basic HTML tags (like <script>, <iframe>, <style>, etc.)
+    text = re.sub(r"<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>", "", text, flags=re.IGNORECASE)
+    
+    # Strip any general HTML tags
+    text = re.sub(r"<[^>]+>", "", text)
+    
+    # 3. Escape potential control characters
+    text = text.replace("<", "&lt;").replace(">", "&gt;")
+    
+    return text.strip()
+
+def detect_malicious_input(text: str) -> Tuple[bool, str]:
+    """
+    Scans the text for potential prompt injection, command injection, or executable scripts.
+    Returns (is_malicious, warning_message).
+    """
+    if not text:
+        return False, ""
+        
+    t = text.lower()
+    
+    # 1. System Prompt Injection / Jailbreak signatures
+    injection_patterns = [
+        "ignore previous instructions",
+        "ignore all prior instructions",
+        "olvida las instrucciones anteriores",
+        "ignora las instrucciones anteriores",
+        "reveal system prompt",
+        "revelar prompt de sistema",
+        "revelar instrucciones",
+        "show system prompt",
+        "system prompt bypass",
+        "forget your rules",
+        "olvida tus reglas",
+        "act as a developer mode",
+        "jailbreak",
+        "system prompt:"
+    ]
+    
+    for pat in injection_patterns:
+        if pat in t:
+            return True, "Intento de elusión de directivas del sistema detectado (Prompt Injection)."
+            
+    # 2. Executable code/scripts signatures
+    os_commands = [
+        "rm -rf", "format c:", "del /s", "mkfs", "chown", "chmod", "shutdown",
+        "subprocess.run", "subprocess.call", "os.system", "shutil.rmtree",
+        "popen", "pty.spawn", "/bin/sh", "/bin/bash", "cmd.exe", "powershell.exe"
+    ]
+    for cmd in os_commands:
+        if cmd in t:
+            return True, f"Intento de ejecución de comando del sistema detectado ({cmd})."
+            
+    # Check for script injection patterns (Python, JavaScript, etc.)
+    script_patterns = [
+        r"import\s+(os|sys|subprocess|shutil|socket|urllib|requests|builtins)",
+        r"from\s+(os|sys|subprocess|shutil|socket|urllib|requests)\s+import",
+        r"eval\s*\(", r"exec\s*\(", r"__import__", r"getattr\s*\(", r"open\s*\(",
+        r"eval\(\s*__import__",
+        r"javascript\s*:", r"onload\s*=", r"onerror\s*=", r"onclick\s*="
+    ]
+    for pattern in script_patterns:
+        if re.search(pattern, t):
+            return True, "Intento de inyección de script o código ejecutable detectado."
+            
+    return False, ""

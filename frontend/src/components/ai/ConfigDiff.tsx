@@ -66,43 +66,43 @@ export default function ConfigDiff() {
   };
 
   return (
-    <div className="bg-slate-950/60 border border-slate-800 rounded-lg overflow-hidden font-mono text-[10px] space-y-3 p-3">
+    <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden font-sans text-xs space-y-3.5 p-3.5 shadow-2xs">
       {/* Title */}
-      <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-        <span className="font-extrabold uppercase text-[9px] text-slate-400 tracking-wider">
+      <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+        <span className="font-extrabold uppercase text-[10px] text-slate-750 tracking-wider">
           Comparativa de Parámetros
         </span>
         <button
           onClick={() => setCompareMode(false)}
-          className="text-slate-500 hover:text-slate-350 cursor-pointer"
+          className="text-slate-400 hover:text-slate-650 cursor-pointer"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Diff Table */}
-      <div className="border border-slate-900 rounded bg-slate-950/90 overflow-hidden">
+      <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-3xs">
         <table className="w-full text-left">
-          <thead className="bg-slate-900 text-slate-500 text-[8px] uppercase tracking-wider border-b border-slate-850">
+          <thead className="bg-slate-50 text-slate-500 text-[9px] uppercase tracking-wider border-b border-slate-200">
             <tr>
-              <th className="p-2">Parámetro</th>
-              <th className="p-2">Actual</th>
-              <th className="p-2">Sugerido</th>
+              <th className="p-2.5 font-bold">Parámetro</th>
+              <th className="p-2.5 font-bold">Actual</th>
+              <th className="p-2.5 font-bold">Sugerido</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-900/60">
+          <tbody className="divide-y divide-slate-100 text-xs">
             {diffEntries.map(([key, proposedVal]) => {
               const currentVal = (currentConfig as any)[key];
               const label = displayLabels[key] || key;
               const suffix = suffixMap[key] || "";
 
               return (
-                <tr key={key} className="hover:bg-slate-900/20">
-                  <td className="p-2 text-slate-400 font-bold">{label}</td>
-                  <td className="p-2 text-slate-500">{currentVal !== undefined ? `${currentVal}${suffix}` : "-"}</td>
-                  <td className="p-2 text-blue-400 font-extrabold flex items-center gap-1">
-                    <ArrowRight className="w-2.5 h-2.5 text-slate-600" />
-                    <span>{proposedVal}{suffix}</span>
+                <tr key={key} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="p-2.5 text-slate-700 font-bold">{label}</td>
+                  <td className="p-2.5 text-slate-500">{currentVal !== undefined ? `${currentVal}${suffix}` : "-"}</td>
+                  <td className="p-2.5 text-blue-600 font-extrabold flex items-center gap-1.5">
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 font-mono text-[11px]">{proposedVal}{suffix}</span>
                   </td>
                 </tr>
               );
@@ -115,16 +115,16 @@ export default function ConfigDiff() {
       <div className="flex gap-2 justify-end pt-1">
         <button
           onClick={() => setCompareMode(false)}
-          className="px-2.5 py-1 text-[8px] uppercase tracking-wider font-extrabold text-slate-500 hover:text-slate-300 border border-transparent rounded cursor-pointer transition-colors"
+          className="px-3.5 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 rounded-lg cursor-pointer transition-colors"
         >
-          cancel
+          Cancelar
         </button>
         <button
           onClick={handleApplyDiff}
-          className="px-2.5 py-1 text-[8px] uppercase tracking-wider font-extrabold text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-650 rounded cursor-pointer transition-colors flex items-center gap-1"
+          className="px-3.5 py-2 text-xs font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-700 border border-blue-600 rounded-lg cursor-pointer transition-all shadow-sm flex items-center gap-1.5 active:scale-97"
         >
-          <Check className="w-2.5 h-2.5 text-blue-500" />
-          <span>apply changes</span>
+          <Check className="w-3.5 h-3.5" />
+          <span>Aplicar Cambios</span>
         </button>
       </div>
     </div>

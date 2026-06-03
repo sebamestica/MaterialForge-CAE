@@ -19,6 +19,17 @@ class ContextBuilder:
         validates ranges, runs the multiobjective ConstraintSolver if a load target is detected,
         and compiles the design context.
         """
+        if intent == "casual_chat":
+            return {
+                "rag_sources": [],
+                "similar_experiments": [],
+                "material_summary": {},
+                "prediction": {},
+                "domain_warnings": [],
+                "domain_confidence": "HIGH",
+                "optimized_solver_result": None
+            }
+
         # 1. Light Context Broker instead of heavy RAG
         rag_sources = self.context_broker.retrieve_context(query, config, intent, k=5)
 
@@ -74,5 +85,6 @@ class ContextBuilder:
             "prediction": pred_report,
             "domain_warnings": guard_warnings,
             "domain_confidence": confidence,
-            "optimized_solver_result": optimized_solver_result
+            "optimized_solver_result": optimized_solver_result,
+            "intent": intent
         }

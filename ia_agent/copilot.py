@@ -22,6 +22,68 @@ def run_copilot_stream(payload: CopilotChatPayload) -> StreamingResponse:
     Executes a chat session in a streaming fashion.
     Yields NDJSON tokens and appends the final structured config_patch at the end.
     """
+    config_dict = payload.config.model_dump()
+
+    # 0. Sanitize inputs and check for malicious scripts / prompt injections
+    from .validators import sanitize_input_text, detect_malicious_input
+    
+    # Sanitize config string values to prevent injection
+    for key, val in config_dict.items():
+        if isinstance(val, str):
+            config_dict[key] = sanitize_input_text(val)
+            
+    is_malicious = False
+    malicious_msg = ""
+    if payload.messages:
+        latest_msg = payload.messages[-1]
+        if latest_msg.role == "user":
+            latest_msg.content = sanitize_input_text(latest_msg.content)
+            mal_flag, mal_desc = detect_malicious_input(latest_msg.content)
+            if mal_flag:
+                is_malicious = True
+                malicious_msg = mal_desc
+            
+    if is_malicious:
+        # If malicious input is detected, return immediate block response without LLM
+        def security_block_generator():
+            block_text = f"Acción denegada por seguridad: {malicious_msg} Por favor, realiza consultas técnicas legítimas sobre diseño 3D o parámetros mecánicos."
+            # Yield token by token for realistic typing effect/stream compatibility
+            for token in block_text.split(" "):
+                yield json.dumps({"type": "token", "content": token + " "}) + "\n"
+            
+            # Yield final structured response conforming to schema
+            from .schemas import CopilotStructuredResponse, AIAnalysis, VariantData, ConfigPatch
+            structured_resp = CopilotStructuredResponse(
+                analysis=AIAnalysis(
+                    text=block_text,
+                    objective_detected="security_block",
+                    key_findings="Entrada maliciosa bloqueada.",
+                    mechanical_justification="El sistema de seguridad previno el procesamiento de este script o instrucción no segura."
+                ),
+                variants=[
+                    VariantData(
+                        id="security_block",
+                        name="Bloqueo de Seguridad",
+                        description="Se detectó y bloqueó un intento de inyección o script malicioso.",
+                        score=0.0,
+                        compression_score=0.0,
+                        energy_absorption_score=0.0,
+                        stability_score=0.0,
+                        printability_score=0.0,
+                        risk_level="HIGH",
+                        estimated_print_time="0m",
+                        estimated_mass="0g",
+                        warnings=[malicious_msg],
+                        config_patch=ConfigPatch()
+                    )
+                ],
+                recommended_variant="security_block",
+                ui_actions=[]
+            )
+            yield json.dumps({"type": "final", "response": structured_resp.model_dump()}) + "\n"
+            
+        return StreamingResponse(security_block_generator(), media_type="application/x-ndjson")
+
     client = OllamaClient()
     
     # 1. Intent routing
@@ -29,16 +91,13 @@ def run_copilot_stream(payload: CopilotChatPayload) -> StreamingResponse:
     intent_data = IntentRouter.classify_intent(latest_query)
     intent = intent_data["intent"]
 
-    # Convert config model to dictionary
-    config_dict = payload.config.model_dump()
-
     # 2. Context Builder
     builder = ContextBuilder()
     context = builder.build_context(latest_query, config_dict, intent)
 
     # 3. Format system prompt
     config_summary = DesignStateTool.format_design_summary(config_dict)
-    system_prompt = PromptBuilder.build_system_prompt(config_summary, context)
+    system_prompt = PromptBuilder.build_system_prompt(config_summary, context, intent=intent)
 
     # 4. Compile messages for Ollama
     ollama_messages = [{"role": "system", "content": system_prompt}]
@@ -79,14 +138,29 @@ def run_copilot_stream(payload: CopilotChatPayload) -> StreamingResponse:
                 if line_data.get("done", False):
                     full_text = "".join(assistant_response_acc)
                     
-                    # Call extractor in background
-                    parser = ResponseParser(client)
-                    structured_resp = parser.extract_structured_response(
-                        conversation_history=[m.model_dump() for m in payload.messages],
-                        assistant_response=full_text,
-                        current_config=config_dict,
-                        context_data=context
-                    )
+                    if intent == "casual_chat":
+                        # Bypass LLM extraction parser for casual chat
+                        from .schemas import CopilotStructuredResponse, AIAnalysis
+                        structured_resp = CopilotStructuredResponse(
+                            analysis=AIAnalysis(
+                                text=full_text,
+                                objective_detected="casual_chat",
+                                key_findings="Conversación casual.",
+                                mechanical_justification="No se requieren cambios paramétricos para charla informal."
+                            ),
+                            variants=[],
+                            recommended_variant="",
+                            ui_actions=[]
+                        )
+                    else:
+                        # Call extractor in background
+                        parser = ResponseParser(client)
+                        structured_resp = parser.extract_structured_response(
+                            conversation_history=[m.model_dump() for m in payload.messages],
+                            assistant_response=full_text,
+                            current_config=config_dict,
+                            context_data=context
+                        )
                     
                     yield json.dumps({"type": "final", "response": structured_resp.model_dump()}) + "\n"
                     break
@@ -100,17 +174,68 @@ def recommend_config(payload: CopilotChatPayload) -> CopilotStructuredResponse:
     Non-streaming endpoint that directly returns a structured recommendation 
     and configuration patch.
     """
+    config_dict = payload.config.model_dump()
+
+    # 0. Sanitize inputs and check for malicious scripts / prompt injections
+    from .validators import sanitize_input_text, detect_malicious_input
+    
+    # Sanitize config string values to prevent injection
+    for key, val in config_dict.items():
+        if isinstance(val, str):
+            config_dict[key] = sanitize_input_text(val)
+            
+    is_malicious = False
+    malicious_msg = ""
+    if payload.messages:
+        latest_msg = payload.messages[-1]
+        if latest_msg.role == "user":
+            latest_msg.content = sanitize_input_text(latest_msg.content)
+            mal_flag, mal_desc = detect_malicious_input(latest_msg.content)
+            if mal_flag:
+                is_malicious = True
+                malicious_msg = mal_desc
+            
+    if is_malicious:
+        from .schemas import CopilotStructuredResponse, AIAnalysis, VariantData, ConfigPatch
+        block_text = f"Acción denegada por seguridad: {malicious_msg} Por favor, realiza consultas técnicas legítimas sobre diseño 3D o parámetros mecánicos."
+        return CopilotStructuredResponse(
+            analysis=AIAnalysis(
+                text=block_text,
+                objective_detected="security_block",
+                key_findings="Entrada maliciosa bloqueada.",
+                mechanical_justification="El sistema de seguridad previno el procesamiento de este script o instrucción no segura."
+            ),
+            variants=[
+                VariantData(
+                    id="security_block",
+                    name="Bloqueo de Seguridad",
+                    description="Se detectó y bloqueó un intento de inyección o script malicioso.",
+                    score=0.0,
+                    compression_score=0.0,
+                    energy_absorption_score=0.0,
+                    stability_score=0.0,
+                    printability_score=0.0,
+                    risk_level="HIGH",
+                    estimated_print_time="0m",
+                    estimated_mass="0g",
+                    warnings=[malicious_msg],
+                    config_patch=ConfigPatch()
+                )
+            ],
+            recommended_variant="security_block",
+            ui_actions=[]
+        )
+
     client = OllamaClient()
     latest_query = payload.messages[-1].content if payload.messages else ""
     intent_data = IntentRouter.classify_intent(latest_query)
     intent = intent_data["intent"]
 
-    config_dict = payload.config.model_dump()
     builder = ContextBuilder()
     context = builder.build_context(latest_query, config_dict, intent)
 
     config_summary = DesignStateTool.format_design_summary(config_dict)
-    system_prompt = PromptBuilder.build_system_prompt(config_summary, context)
+    system_prompt = PromptBuilder.build_system_prompt(config_summary, context, intent=intent)
 
     ollama_messages = [{"role": "system", "content": system_prompt}]
     for msg in payload.messages:
@@ -138,6 +263,20 @@ def recommend_config(payload: CopilotChatPayload) -> CopilotStructuredResponse:
             res_data = json.loads(response.read().decode())
             assistant_text = res_data.get("message", {}).get("content", "")
             
+            if intent == "casual_chat":
+                from .schemas import CopilotStructuredResponse, AIAnalysis
+                return CopilotStructuredResponse(
+                    analysis=AIAnalysis(
+                        text=assistant_text,
+                        objective_detected="casual_chat",
+                        key_findings="Conversación casual.",
+                        mechanical_justification="No se requieren cambios paramétricos para charla informal."
+                    ),
+                    variants=[],
+                    recommended_variant="",
+                    ui_actions=[]
+                )
+                
             parser = ResponseParser(client)
             return parser.extract_structured_response(
                 conversation_history=[m.model_dump() for m in payload.messages],

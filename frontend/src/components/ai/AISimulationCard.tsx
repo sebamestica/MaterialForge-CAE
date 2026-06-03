@@ -9,16 +9,16 @@ export default function AISimulationCard() {
 
   if (loading) {
     return (
-      <div className="bg-slate-950/40 border border-slate-800 rounded-lg p-4 font-mono text-[10px] space-y-2 text-center animate-pulse">
-        <Sparkles className="w-4 h-4 mx-auto text-blue-500 animate-spin" />
-        <span className="text-slate-400">Ejecutando Simulación Estructural ML...</span>
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 font-sans text-xs space-y-2 text-center animate-pulse shadow-3xs">
+        <Sparkles className="w-4.5 h-4.5 mx-auto text-blue-600 animate-spin" />
+        <span className="text-slate-500 font-semibold">Ejecutando Simulación Estructural ML...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-rose-950/20 border border-rose-900/40 rounded-lg p-3.5 font-mono text-[10px] text-rose-300">
+      <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 font-sans text-xs text-rose-700 leading-normal shadow-3xs">
         Error en simulación: {error}
       </div>
     );
@@ -29,44 +29,44 @@ export default function AISimulationCard() {
   const { stressMpa, deformationMm, energyAbsorption, failureRisk, warnings } = simulationResults;
 
   const riskClasses: Record<string, string> = {
-    LOW: "text-emerald-400 border-emerald-950 bg-emerald-950/20",
-    MEDIUM: "text-amber-400 border-amber-950 bg-amber-950/20",
-    HIGH: "text-rose-400 border-rose-950 bg-rose-950/20"
+    LOW: "text-emerald-700 border-emerald-250 bg-emerald-50/50",
+    MEDIUM: "text-amber-800 border-amber-250 bg-amber-50/50",
+    HIGH: "text-rose-700 border-rose-250 bg-rose-50/50"
   };
 
   return (
-    <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3.5 font-mono text-[10px] space-y-3 shadow-md animate-fadeIn">
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 font-sans text-xs space-y-3.5 shadow-2xs animate-fadeIn">
       {/* Title */}
-      <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-        <span className="font-extrabold uppercase text-[9px] text-slate-400 tracking-wider flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-blue-400" />
+      <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+        <span className="font-extrabold uppercase text-[10px] text-slate-755 tracking-wider flex items-center gap-1.5">
+          <Shield className="w-4 h-4 text-blue-650" />
           Reporte de Simulación Virtual ML
         </span>
         <button
           onClick={() => useDesignStore.setState({ simulationResults: null })}
-          className="text-slate-500 hover:text-slate-350 cursor-pointer"
+          className="text-slate-400 hover:text-slate-650 cursor-pointer"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Grid Indicators */}
-      <div className="grid grid-cols-2 gap-2 text-slate-400">
-        <div className="bg-slate-950/80 p-2 rounded border border-slate-900">
-          <span className="block text-[8px] text-slate-500 uppercase font-black">Esfuerzo Máx</span>
-          <span className="text-white text-xs font-black">{stressMpa.toFixed(2)} MPa</span>
+      <div className="grid grid-cols-2 gap-2.5 text-slate-650">
+        <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-3xs">
+          <span className="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Esfuerzo Máx</span>
+          <span className="text-slate-800 text-sm font-black">{stressMpa.toFixed(2)} MPa</span>
         </div>
-        <div className="bg-slate-950/80 p-2 rounded border border-slate-900">
-          <span className="block text-[8px] text-slate-500 uppercase font-black">Deformación Est.</span>
-          <span className="text-white text-xs font-black">{deformationMm.toFixed(2)} mm</span>
+        <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-3xs">
+          <span className="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Deformación Est.</span>
+          <span className="text-slate-800 text-sm font-black">{deformationMm.toFixed(2)} mm</span>
         </div>
-        <div className="bg-slate-950/80 p-2 rounded border border-slate-900">
-          <span className="block text-[8px] text-slate-500 uppercase font-black">Absorción Energía</span>
-          <span className="text-white text-xs font-black">{energyAbsorption.toFixed(2)} MJ/m³</span>
+        <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-3xs">
+          <span className="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Absorción Energía</span>
+          <span className="text-slate-800 text-sm font-black">{energyAbsorption.toFixed(2)} MJ/m³</span>
         </div>
-        <div className="bg-slate-950/80 p-2 rounded border border-slate-900 flex flex-col justify-between">
-          <span className="block text-[8px] text-slate-500 uppercase font-black">Riesgo Fallo</span>
-          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black border uppercase tracking-wider text-center ${
+        <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-3xs flex flex-col justify-between">
+          <span className="block text-[9px] text-slate-400 uppercase font-bold mb-1">Riesgo Fallo</span>
+          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-wider text-center ${
             riskClasses[failureRisk] || riskClasses.LOW
           }`}>
             {failureRisk}
@@ -76,13 +76,13 @@ export default function AISimulationCard() {
 
       {/* Warnings */}
       {warnings.length > 0 && (
-        <div className="bg-amber-950/10 border border-amber-900/30 p-2 rounded text-amber-400 space-y-1">
-          <span className="font-extrabold uppercase text-[8px] tracking-wider block flex items-center gap-1">
-            <ShieldAlert className="w-3.5 h-3.5" />
+        <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-amber-800 space-y-1 text-xs">
+          <span className="font-extrabold uppercase text-[9px] tracking-wider block flex items-center gap-1 text-amber-750">
+            <ShieldAlert className="w-4 h-4 text-amber-600 animate-pulse" />
             Alertas de Inferencia
           </span>
           {warnings.map((w, i) => (
-            <p key={i} className="text-[8px] leading-tight">• {w}</p>
+            <p key={i} className="text-[11px] leading-snug">• {w}</p>
           ))}
         </div>
       )}
