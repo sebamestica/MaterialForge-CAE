@@ -50,9 +50,28 @@ class PromptBuilder:
         pred_stress = prediction.get("predicted_max_stress_MPa", "N/A")
         pred_energy = prediction.get("predicted_energy_density_MJ_m3", "N/A")
 
+        solver_guidance = ""
+        solver_res = context.get("optimized_solver_result")
+        if solver_res:
+            solver_guidance = (
+                "=== SOLUCIONADOR MULTIOBJETIVO GEOMÉTRICO (BACKEND) ===\n"
+                "El solucionador geométrico del backend ha calculado que la configuración óptima para cumplir con los requerimientos es:\n"
+                f"- Patrón TPMS recomendado: '{solver_res['pattern']}'\n"
+                f"- Infill Density recomendado: {solver_res['infillDensity']}%\n"
+                f"- Wall Thickness recomendado: {solver_res['wallThickness']} mm\n"
+                f"- Cell Size recomendado: {solver_res['cellSize']} mm\n"
+                f"- Masa Geométrica Real calculada: {solver_res['estimated_mass_g']} g (≤ 100g)\n"
+                f"- Capacidad de Carga mecánica estimada: {solver_res['estimated_load_kg']} kg\n"
+                "REGLA DE OBLIGATORIEDAD: DEBES usar exactamente este infill, wallThickness y cellSize en tu CONFIG_PATCH para garantizar la factibilidad física y de carga.\n\n"
+            )
+
         system_prompt = (
-            "Actúas como un MOTOR DE OPTIMIZACIÓN ESTRUCTURAL y Copiloto CAD/CAE Técnico de MaterialForge (similar a Fusion 360, ANSYS, OrcaSlicer, Autodesk Generative Design).\n"
-            "Tu comportamiento debe ser el de un kernel de optimización mecánica y manufactura aditiva avanzada. Evita explicaciones redundantes, obvias o de tono motivacional.\n\n"
+            "Actúas como un MOTOR DE OPTIMIZACIÓN ESTRUCTURAL y Copiloto CAD/CAE Técnico de MaterialForge.\n"
+            "Tu comportamiento debe ser el de un kernel de optimización mecánica. Evita explicaciones redundantes o introducciones.\n\n"
+            "=== REGLA DE CONCISION CRÍTICA (AL GRANO) ===\n"
+            "- El usuario exige respuestas muy cortas, directas y sin rodeos.\n"
+            "- La sección ## SUMMARY debe contener como MÁXIMO 2 oraciones muy breves describiendo la justificación física de la variante propuesta y su limitación.\n"
+            "- No agregues explicaciones adicionales fuera de la estructura obligatoria.\n\n"
             "=== CONFIGURACIÓN ACTUAL DEL DISEÑO ===\n"
             f"{config_summary}\n"
             "=== LÍMITES FÍSICOS OBLIGATORIOS ===\n"
@@ -70,14 +89,12 @@ class PromptBuilder:
             f"{warnings_str}\n\n"
             "=== LITERATURA CIENTÍFICA (RAG) ===\n"
             f"{rag_str}\n\n"
+            f"{solver_guidance}"
             "=== FORMATO OBLIGATORIO DE RESPUESTA (ESTRICTO) ===\n"
             "Tu respuesta debe ser corta, estructurada, técnica y accionable. Responde ÚNICAMENTE en el siguiente formato, sin saludos ni introducciones ni texto fuera del esquema:\n\n"
             "# RESULT\n\n"
             "## SUMMARY\n"
-            "Máximo 4-6 líneas explicando:\n"
-            "- Qué configuración elegiste y por qué\n"
-            "- Principal mejora mecánica esperada\n"
-            "- Principal tradeoff o limitación física\n\n"
+            "Máximo 2 oraciones cortas explicando la configuración sugerida y su principal tradeoff.\n\n"
             "## SCORES\n"
             "compression_strength: XX\n"
             "energy_absorption: XX\n"

@@ -204,7 +204,7 @@ export const useLabStore = create<LabState>((set, get) => ({
 
   pattern: "gyroid",
   infill: 35,
-  cellSize: 3.0,
+  cellSize: 6.0,
   cellThickness: 0.6,
   orientation: "Isotrópica",
 
@@ -212,7 +212,7 @@ export const useLabStore = create<LabState>((set, get) => ({
   printSpeed: 50,
 
   viewportMode: "solid",
-  sliceHeight: 25.0,
+  sliceHeight: 50.0,
   loadingMesh: false,
   loadingPredictions: false,
   appliedForce: 0,
@@ -573,7 +573,7 @@ export const useLabStore = create<LabState>((set, get) => ({
       material: "PLA",
       pattern: "gyroid",
       infill: 35,
-      cellSize: 3.0,
+      cellSize: 6.0,
       cellThickness: 0.6,
       orientation: "Isotrópica",
       layerHeight: 0.20,

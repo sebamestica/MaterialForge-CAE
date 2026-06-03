@@ -1,0 +1,38 @@
+{
+  "3b30ecbfbed2fc52027344faebbd2841beec152dd7c03353e7871c9b72cc2aa7": {
+    "real_mass_g": 283.18,
+    "metrics": {
+      "relative_density": 1.827,
+      "surface_area_mm2": 28048.94,
+      "volume_fraction": 1.827,
+      "connectivity": 2417,
+      "cell_count": 15625.0,
+      "min_strut_thickness_mm": 13.353,
+      "max_strut_thickness_mm": 19.215
+    }
+  },
+  "1fa7a63d53b8b0d755260252b587cf4c06eb7120b5084256fec30e5ddd591675": {
+    "real_mass_g": 283.18,
+    "metrics": {
+      "relative_density": 1.827,
+      "surface_area_mm2": 28048.94,
+      "volume_fraction": 1.827,
+      "connectivity": 2417,
+      "cell_count": 3375.0,
+      "min_strut_thickness_mm": 13.353,
+      "max_strut_thickness_mm": 19.215
+    }
+  },
+  "abb65fc5b81ad8eca02825eb017dcdccfcaefbe85de515a2d36bfc83310fda32": {
+    "real_mass_g": 271.22,
+    "metrics": {
+      "relative_density": 1.7498,
+      "surface_area_mm2": 27155.16,
+      "volume_fraction": 1.7498,
+      "connectivity": 2120,
+      "cell_count": 15625.0,
+      "min_strut_thickness_mm": 13.21,
+      "max_strut_thickness_mm": 19.009
+    }
+  }
+}

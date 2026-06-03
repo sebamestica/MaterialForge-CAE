@@ -3,19 +3,10 @@
 import React, { useMemo, useEffect, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
-import * as THREE from "three";
 import { useLabStore } from "@/stores/useLabStore";
 import { useShallow } from "zustand/react/shallow";
-import { Box, Layers, Activity, RotateCcw, Compass, Eye, Video } from "lucide-react";
+import { TpmsPipeline, SolidsPipeline, PipelineProps } from "@/rendering/pipelines";
 
-// Component to enable local clipping on the WebGLRenderer
-function ClippingEnabler() {
-  const { gl } = useThree();
-  useEffect(() => {
-    gl.localClippingEnabled = true;
-  }, [gl]);
-  return null;
-}
 
 // Controller to position camera based on Right Panel buttons
 function CameraController() {
@@ -123,307 +114,26 @@ function DimensionLines({ size }: DimensionLinesProps) {
   );
 }
 
-// Fast inline HSL to RGB conversion helper for s=1.0, l=0.5
-function fastHslToRgb(h: number): [number, number, number] {
-  const x = 1 - Math.abs(((h / 60) % 2) - 1);
-  if (h < 60) return [1, x, 0];
-  if (h < 120) return [x, 1, 0];
-  if (h < 180) return [0, 1, x];
-  if (h < 240) return [0, x, 1];
-  return [0, 0, 1];
-}
 
-// Custom mesh renderer connecting vertices and faces
-interface LatticeMeshProps {
-  vertices: number[];
-  faces: number[];
-  mode: "solid" | "wireframe" | "transparent" | "heatmap" | "slicer" | "layers" | "shell";
-  material: string;
-  size: number;
-  sliceHeight: number;
-}
-
-function LatticeMesh({ vertices, faces, mode, material, size, sliceHeight }: LatticeMeshProps) {
-  const appliedForce = useLabStore((state) => state.appliedForce);
-  const predictions = useLabStore((state) => state.predictions);
-  const infill = useLabStore((state) => state.infill);
-  const pattern = useLabStore((state) => state.pattern);
-  const cellSize = useLabStore((state) => state.cellSize);
-  const orientation = useLabStore((state) => state.orientation);
-
-  const geomRef = useRef<THREE.BufferGeometry | null>(null);
-  const baseStressCacheRef = useRef<Float32Array | null>(null);
-
-  // 1. Compile static geometry (position & index only) and manage manual GPU buffer disposal
-  const geometry = useMemo(() => {
-    const geom = new THREE.BufferGeometry();
-    if (vertices.length === 0 || faces.length === 0) return geom;
-
-    const verticesFloat32 = new Float32Array(vertices);
-    const indicesUint32 = new Uint32Array(faces);
-
-    geom.setAttribute("position", new THREE.BufferAttribute(verticesFloat32, 3));
-    geom.setIndex(new THREE.BufferAttribute(indicesUint32, 1));
-
-    // Initialize custom color attribute buffer
-    const colorsFloat32 = new Float32Array(vertices.length);
-    geom.setAttribute("color", new THREE.BufferAttribute(colorsFloat32, 3));
-
-    geom.computeVertexNormals();
-
-    // Clean up previous geometry to prevent VRAM memory leak
-    if (geomRef.current) {
-      geomRef.current.dispose();
-    }
-    geomRef.current = geom;
-
-    return geom;
-  }, [vertices, faces, size]);
-
-  const meshRef = useRef<THREE.Mesh | null>(null);
-  const prevMaterialRef = useRef<THREE.Material | THREE.Material[] | null>(null);
-
-  // Clean up materials when they change to prevent VRAM memory leak
-  useEffect(() => {
-    if (meshRef.current) {
-      const currentMat = meshRef.current.material;
-      if (prevMaterialRef.current && prevMaterialRef.current !== currentMat) {
-        if (Array.isArray(prevMaterialRef.current)) {
-          prevMaterialRef.current.forEach((m) => m.dispose());
-        } else {
-          prevMaterialRef.current.dispose();
-        }
-      }
-      prevMaterialRef.current = currentMat;
-    }
-  }, [mode, material]);
-
-  // Clean up geometry and materials on unmount
-  useEffect(() => {
-    return () => {
-      if (geomRef.current) {
-        geomRef.current.dispose();
-        geomRef.current = null;
-      }
-      if (prevMaterialRef.current) {
-        if (Array.isArray(prevMaterialRef.current)) {
-          prevMaterialRef.current.forEach((m) => m.dispose());
-        } else {
-          prevMaterialRef.current.dispose();
-        }
-        prevMaterialRef.current = null;
-      }
-    };
-  }, []);
-
-  // Precompute base stress values whenever geometry or structural settings change
-  useEffect(() => {
-    if (vertices.length === 0) {
-      baseStressCacheRef.current = null;
-      return;
-    }
-
-    const numVerts = vertices.length / 3;
-    const cache = new Float32Array(numVerts);
-    const maxVal = size || 1.0;
-    const isTPU = material.toUpperCase() === "TPU";
-    const cell = cellSize || 8.0;
-    const k = (2 * Math.PI * size) / cell;
-    let kx = k;
-    let ky = k;
-    let kz = k;
-    if (orientation === "Anisotrópica X") {
-      kx = k * 0.5;
-    } else if (orientation === "Anisotrópica Y") {
-      ky = k * 0.5;
-    } else if (orientation === "Anisotrópica Z") {
-      kz = k * 0.5;
-    }
-
-    const shearWidth = isTPU ? 0.15 : 0.05;
-    const shearFactor = isTPU ? 0.35 : 0.55;
-    const contactFactor = isTPU ? 0.25 : 0.45;
-    const bucklingFactor = isTPU ? 0.40 : 0.15;
-
-    for (let i = 0; i < numVerts; i++) {
-      const x = vertices[i * 3];
-      const y = vertices[i * 3 + 1];
-      const z = vertices[i * 3 + 2];
-
-      const normY = y / maxVal;
-      const normX = x / maxVal;
-      const normZ = z / maxVal;
-
-      const shearX = Math.exp(-Math.pow(Math.abs(normX - normY) - 0.1, 2) / shearWidth) +
-                     Math.exp(-Math.pow(Math.abs((1.0 - normX) - normY) - 0.1, 2) / shearWidth);
-      const shearZ = Math.exp(-Math.pow(Math.abs(normZ - normY) - 0.1, 2) / shearWidth) +
-                     Math.exp(-Math.pow(Math.abs((1.0 - normZ) - normY) - 0.1, 2) / shearWidth);
-      const shearBands = shearFactor * ((shearX + shearZ) / 2.0);
-
-      const contactStress = contactFactor * (Math.exp(-normY / 0.12) + Math.exp(-(1.0 - normY) / 0.12));
-
-      const bucklingStress = bucklingFactor * Math.sin(normY * Math.PI) * Math.sin(normX * Math.PI) * Math.sin(normZ * Math.PI);
-
-      let localStrut = 0;
-      if (pattern === "gyroid") {
-        const valX = normX * kx;
-        const valY = normY * ky;
-        const valZ = normZ * kz;
-        localStrut = 0.15 * Math.max(0, Math.cos(valX) * Math.cos(valY) * Math.cos(valZ));
-      } else if (pattern === "honeycomb") {
-        const k_hex = (2 * Math.PI * size) / (cell * 1.5);
-        const kx_hex = orientation === "Anisotrópica X" ? k_hex * 0.5 : k_hex;
-        const ky_hex = orientation === "Anisotrópica Y" ? k_hex * 0.5 : k_hex;
-        localStrut = 0.15 * Math.max(0, Math.cos(kx_hex * normX) * Math.cos(ky_hex * normY));
-      } else if (pattern === "triply_periodic") {
-        const valX = normX * kx;
-        const valY = normY * ky;
-        const valZ = normZ * kz;
-        localStrut = 0.18 * Math.max(0, Math.cos(valX) + Math.cos(valY) + Math.cos(valZ));
-      } else { // grid
-        const valX = normX * kx;
-        const valY = normY * ky;
-        const valZ = normZ * kz;
-        localStrut = 0.15 * Math.max(0, Math.cos(valX) * Math.cos(valY) * Math.cos(valZ));
-      }
-
-      cache[i] = 0.05 + contactStress + shearBands + bucklingStress + localStrut;
-    }
-
-    baseStressCacheRef.current = cache;
-  }, [vertices, size, material, pattern, cellSize, orientation]);
-
-  // 2. Perform in-place updates of the color buffer attribute on appliedForce updates (prevents geometry re-creations)
-  useEffect(() => {
-    if (mode !== "heatmap") return;
-    if (vertices.length === 0 || !geometry || !baseStressCacheRef.current) return;
-    const colorAttr = geometry.getAttribute("color") as THREE.BufferAttribute;
-    if (!colorAttr) return;
-
-    const numVerts = vertices.length / 3;
-    const tempColors = new Float32Array(vertices.length);
-    const loadFactor = appliedForce / 1000.0;
-    const isTPU = material.toUpperCase() === "TPU";
-    const infillRatio = infill / 100.0;
-    const localStressConcentration = 1.0 / (infillRatio + 0.1);
-    const forceScale = loadFactor * localStressConcentration * (isTPU ? 0.5 : 1.1);
-
-    const cache = baseStressCacheRef.current;
-
-    for (let i = 0; i < numVerts; i++) {
-      const baseStress = cache[i];
-      const stress = baseStress * forceScale;
-      
-      const hue = (1.0 - Math.min(1.0, stress)) * 240.0;
-      const rgb = fastHslToRgb(hue);
-      tempColors[i * 3] = rgb[0];
-      tempColors[i * 3 + 1] = rgb[1];
-      tempColors[i * 3 + 2] = rgb[2];
-    }
-
-    // Direct, highly efficient in-place buffer modification in GPU VRAM
-    colorAttr.copyArray(tempColors);
-    colorAttr.needsUpdate = true;
-  }, [geometry, vertices, mode, appliedForce, material, infill]);
-
-  // Define clipping plane for slicer mode
-  const clippingPlane = useMemo(() => {
-    const s = size || 50.0;
-    const sh = sliceHeight || 25.0;
-    const half = s / 2;
-    return new THREE.Plane(new THREE.Vector3(0, 0, -1), sh - half);
-  }, [sliceHeight, size]);
-
-  if (vertices.length === 0 || faces.length === 0) {
-    return (
-      <mesh>
-        <boxGeometry args={[size - 2, size - 2, size - 2]} />
-        <meshStandardMaterial
-          color="#334155"
-          wireframe
-          transparent
-          opacity={0.1}
-        />
-      </mesh>
-    );
+function RenderPipelineDispatcher(props: PipelineProps) {
+  // If it's a solid fallback bounding box, render as Solid. Otherwise, render as TPMS lattice.
+  if (props.vertices.length === 8 && props.faces.length === 12) {
+    return <SolidsPipeline {...props} />;
   }
+  return <TpmsPipeline {...props} />;
+}
 
-  const isWireframe = mode === "wireframe";
-  const isTransparent = mode === "transparent";
-  const isSlicer = mode === "slicer";
-  const isHeatmap = mode === "heatmap";
-  const isShell = mode === "shell";
-
-  const color = material === "TPU" ? "#2563eb" : "#475569";
-
-  // Calculate physical compression deformation factors (Y is vertical in Three.js)
-  const maxDeform = predictions?.deformationMm || 4.0;
-  const deformationMm = (appliedForce / 1000.0) * maxDeform;
-  const compressionFactor = Math.min(0.20, deformationMm / size); // caps at 20% deformation
-  const half = size / 2;
-  const yShift = -half * compressionFactor; // locks the bottom of the cube
-
-  return (
-    <group
-      position={[-size / 2, -size / 2 + yShift, -size / 2]}
-      scale={[1, 1 - compressionFactor, 1]}
-    >
-      <mesh ref={meshRef} geometry={geometry}>
-        {isHeatmap ? (
-          <meshStandardMaterial
-            key={`heatmap-mat-${mode}`}
-            vertexColors
-            roughness={0.4}
-            metalness={0.1}
-            side={THREE.DoubleSide}
-          />
-        ) : isShell ? (
-          <meshStandardMaterial
-            key="shell-mat"
-            color="#2563eb"
-            wireframe={true}
-            roughness={0.3}
-            metalness={0.8}
-            side={THREE.DoubleSide}
-          />
-        ) : (
-          <meshStandardMaterial
-            key={`standard-mat-${mode}`}
-            color={color}
-            wireframe={isWireframe}
-            transparent={isTransparent || isSlicer}
-            opacity={isTransparent ? 0.35 : isSlicer ? 0.25 : 1.0}
-            roughness={0.5}
-            metalness={0.1}
-            side={THREE.DoubleSide}
-            clippingPlanes={isSlicer && clippingPlane ? [clippingPlane] : undefined}
-          />
-        )}
-      </mesh>
-
-      {/* Render sliced toolpath indicator */}
-      {isSlicer && clippingPlane && (
-        <mesh geometry={geometry}>
-          <meshStandardMaterial
-            key="slicer-indicator-mat"
-            color="#38bdf8"
-            wireframe
-            transparent
-            opacity={0.9}
-            side={THREE.DoubleSide}
-            clippingPlanes={[
-              clippingPlane,
-              new THREE.Plane(new THREE.Vector3(0, 0, 1), -((sliceHeight || 25.0) - (size || 50.0) / 2 - 1.0)),
-            ]}
-          />
-        </mesh>
-      )}
-    </group>
-  );
+interface PrinterProfile {
+  name: string;
+  build_volume?: {
+    x?: number;
+    y?: number;
+    z?: number;
+  };
 }
 
 // Interactive Build Plate component representing the machine bed boundaries and grid
-function BuildPlate({ printerName, printerProfiles, size }: { printerName: string; printerProfiles: any[]; size: number }) {
+function BuildPlate({ printerName, printerProfiles, size }: { printerName: string; printerProfiles: PrinterProfile[]; size: number }) {
   const profile = printerProfiles.find(p => p.name === printerName);
   const width = profile?.build_volume?.x || 220.0;
   const depth = profile?.build_volume?.y || 220.0;
@@ -615,7 +325,7 @@ export default function BaseViewport() {
           {(["solid", "shell", "wireframe", "transparent", "heatmap", "slicer"] as const).map((mode) => (
             <button
               key={mode}
-              onClick={() => setParam("viewportMode", mode as any)}
+              onClick={() => setParam("viewportMode", mode as PipelineProps["mode"])}
               className={`px-2.5 py-1 text-xs lg:text-sm font-black rounded-md capitalize transition-all cursor-pointer whitespace-nowrap ${
                 viewportMode === mode
                   ? "bg-[#1E40AF] text-white shadow-2xs font-bold"
@@ -679,18 +389,36 @@ export default function BaseViewport() {
       {/* Interactive 3D Canvas */}
       <div className="flex-1 w-full">
         <Canvas
+          shadows
           camera={{ position: [60, 60, 80], fov: 45 }}
           gl={{ localClippingEnabled: true }}
         >
-          <ClippingEnabler />
           <CameraController />
           <color attach="background" args={["#FAFBFC"]} />
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[100, 100, 50]} intensity={1.0} />
-          <directionalLight position={[-100, -100, -50]} intensity={0.4} />
+          <ambientLight intensity={0.25} />
+          <hemisphereLight color="#f8fafc" groundColor="#64748b" intensity={0.35} />
+          
+          {/* Main key light with shadow casting */}
+          <directionalLight
+            position={[80, 100, 50]}
+            intensity={1.1}
+            castShadow
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
+            shadow-bias={-0.00005}
+          />
+          
+          {/* Fill light */}
+          <directionalLight
+            position={[-80, -50, -50]}
+            intensity={0.3}
+          />
+          
+          {/* Subtle blue accent rim light to bring out structural depth and highlights */}
+          <pointLight position={[0, 80, -80]} intensity={0.5} color="#38bdf8" />
 
           <group rotation={[0, 0, 0]}>
-            <LatticeMesh
+            <RenderPipelineDispatcher
                vertices={meshVertices}
                faces={meshFaces}
                mode={viewportMode}
@@ -699,6 +427,13 @@ export default function BaseViewport() {
                sliceHeight={sliceHeight}
             />
             <DimensionLines size={sizeMm} />
+            
+            {/* Ground shadow receiver */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -sizeMm / 2 - 0.15, 0]} receiveShadow>
+              <planeGeometry args={[400, 400]} />
+              <shadowMaterial opacity={0.12} />
+            </mesh>
+
             {showBuildPlate && (
               <BuildPlate
                 printerName={selectedPrinter}

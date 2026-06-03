@@ -421,42 +421,106 @@ def variants_endpoint(config: Dict[str, Any] = Body(default_factory=dict)):
     base_config = config or state_store.current_config
     predictor = PredictionTool()
     
-    variants = []
-    candidates = [
-        {
+    # Query best configurations from the experimental database if available
+    from .data_access.tabular_store import TabularStore
+    try:
+        store = TabularStore()
+        best_str_list = store.get_best_configs_for_target("max_stress_MPa", limit=3)
+        best_en_list = store.get_best_configs_for_target("energy_density_MJ_m3", limit=3)
+        best_bal_list = store.get_best_configs_for_target("specific_energy_absorption_kJ_kg", limit=3)
+    except Exception as e:
+        print(f"[VARIANTS] TabularStore query failed: {e}")
+        best_str_list, best_en_list, best_bal_list = [], [], []
+
+    # Map candidate 1 (Strength)
+    cand_str = None
+    if best_str_list:
+        rec = best_str_list[0]
+        cand_str = {
             "name": "Opción 1: Resistencia Máxima a Compresión",
-            "material": "TPU" if str(base_config.get("material", "TPU")).upper() == "TPU" else "PLA",
-            "infill": 75.0 if str(base_config.get("material", "TPU")).upper() == "TPU" else 65.0,
-            "pattern": "gyroid",
-            "cellSize": 4.5,
-            "wallThickness": 2.0 if str(base_config.get("material", "TPU")).upper() == "TPU" else 1.6,
-            "printSpeed": 25.0 if str(base_config.get("material", "TPU")).upper() == "TPU" else 50.0,
-            "layerHeight": 0.2,
-            "desc": "Densidad de infill y espesor de pared maximizados para soportar cargas axiales elevadas."
-        },
-        {
-            "name": "Opción 2: Máxima Absorción de Energía",
-            "material": "TPU",
-            "infill": 60.0,
+            "material": str(rec.get("material", "PLA")).upper(),
+            "infill": float(rec.get("infill_density_percent", 70.0)),
+            "pattern": str(rec.get("infill_pattern", "gyroid")).lower(),
+            "cellSize": float(rec.get("cell_size_mm", 4.5) or 4.5),
+            "wallThickness": float(rec.get("wall_thickness_mm", 1.6)),
+            "printSpeed": float(rec.get("print_speed_mm_s", 45.0)),
+            "layerHeight": float(rec.get("layer_height_mm", 0.2)),
+            "desc": f"Configuración óptima de alta resistencia basada en probeta real con esfuerzo de {rec.get('max_stress_MPa', 0.0):.1f} MPa."
+        }
+    else:
+        # High score fallback for Strength
+        cand_str = {
+            "name": "Opción 1: Resistencia Máxima a Compresión",
+            "material": "PLA",
+            "infill": 80.0,
             "pattern": "gyroid",
             "cellSize": 4.0,
-            "wallThickness": 1.6,
+            "wallThickness": 2.4,
+            "printSpeed": 40.0,
+            "layerHeight": 0.15,
+            "desc": "Densidad de infill de 80% y paredes gruesas optimizadas para resistir esfuerzos axiales altos."
+        }
+
+    # Map candidate 2 (Energy)
+    cand_en = None
+    if best_en_list:
+        rec = best_en_list[0]
+        cand_en = {
+            "name": "Opción 2: Máxima Absorción de Energía",
+            "material": str(rec.get("material", "TPU")).upper(),
+            "infill": float(rec.get("infill_density_percent", 60.0)),
+            "pattern": str(rec.get("infill_pattern", "gyroid")).lower(),
+            "cellSize": float(rec.get("cell_size_mm", 4.0) or 4.0),
+            "wallThickness": float(rec.get("wall_thickness_mm", 1.6)),
+            "printSpeed": float(rec.get("print_speed_mm_s", 25.0)),
+            "layerHeight": float(rec.get("layer_height_mm", 0.2)),
+            "desc": f"Configuración optimizada de absorción basada en ensayo experimental de {rec.get('energy_density_MJ_m3', 0.0):.2f} MJ/m³."
+        }
+    else:
+        # High score fallback for Energy
+        cand_en = {
+            "name": "Opción 2: Máxima Absorción de Energía",
+            "material": "TPU",
+            "infill": 70.0,
+            "pattern": "gyroid",
+            "cellSize": 3.5,
+            "wallThickness": 2.0,
             "printSpeed": 25.0,
             "layerHeight": 0.2,
-            "desc": "Optimizada en TPU flexible con retícula gyroid para absorber impactos de forma progresiva."
-        },
-        {
-            "name": "Opción 3: Balance Eficiente de Peso y Tiempo",
-            "material": base_config.get("material", "TPU"),
-            "infill": 35.0,
-            "pattern": "gyroid",
-            "cellSize": 5.5,
-            "wallThickness": 1.2,
-            "printSpeed": 35.0 if str(base_config.get("material", "TPU")).upper() == "TPU" else 60.0,
-            "layerHeight": 0.2,
-            "desc": "Configuración balanceada de peso ligero con un óptimo desempeño de resistencia general."
+            "desc": "Optimizada en TPU elastomérico con celdas compactas para amortiguación de impacto progresiva."
         }
-    ]
+
+    # Map candidate 3 (Balance)
+    cand_bal = None
+    if best_bal_list:
+        rec = best_bal_list[0]
+        cand_bal = {
+            "name": "Opción 3: Balance Eficiente de Peso y Tiempo",
+            "material": str(rec.get("material", base_config.get("material", "PLA"))).upper(),
+            "infill": float(rec.get("infill_density_percent", 45.0)),
+            "pattern": str(rec.get("infill_pattern", "gyroid")).lower(),
+            "cellSize": float(rec.get("cell_size_mm", 5.0) or 5.0),
+            "wallThickness": float(rec.get("wall_thickness_mm", 1.2)),
+            "printSpeed": float(rec.get("print_speed_mm_s", 50.0)),
+            "layerHeight": float(rec.get("layer_height_mm", 0.2)),
+            "desc": f"Configuración balanceada derivada del dataset experimental, maximizando eficiencia mecánica por masa."
+        }
+    else:
+        # High score fallback for Balance
+        cand_bal = {
+            "name": "Opción 3: Balance Eficiente de Peso y Tiempo",
+            "material": "PLA",
+            "infill": 45.0,
+            "pattern": "gyroid",
+            "cellSize": 5.0,
+            "wallThickness": 1.6,
+            "printSpeed": 45.0,
+            "layerHeight": 0.2,
+            "desc": "Configuración balanceada que optimiza la relación rigidez/peso para aplicaciones generales."
+        }
+
+    variants = []
+    candidates = [cand_str, cand_en, cand_bal]
     
     for idx, cand in enumerate(candidates):
         cand_config = base_config.copy()

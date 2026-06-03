@@ -294,202 +294,7 @@ class STLOptPayload(BaseModel):
     cellSize: float = 8.0
     orientation: str = "Isotrópica"
     resolution: str = "Alta"
-
-def compile_trimesh_geometry(payload: STLOptPayload, for_stl: bool) -> trimesh.Trimesh:
-    size = float(payload.size)
-    wall_t = float(payload.wallThickness)
-    infill_pct = float(payload.infillDensity)
-    infill_thickness = float(payload.infillThickness)
-    pattern = payload.pattern
-    show_shell = payload.showShell
-    
-    # 1. Map base resolution preset and max grid size limit based on quality profile
-    if for_stl:
-        res_map = {"Baja": 1.4, "Media": 0.9, "Alta": 0.55, "Ultra": 0.35}
-        max_grid_size_map = {"Baja": 45, "Media": 70, "Alta": 100, "Ultra": 150}
-    else:
-        res_map = {"Baja": 2.0, "Media": 1.2, "Alta": 0.8, "Ultra": 0.5}
-        max_grid_size_map = {"Baja": 25, "Media": 45, "Alta": 70, "Ultra": 100}
-        
-    res = res_map.get(payload.resolution, 0.8)
-    max_grid_size = max_grid_size_map.get(payload.resolution, 70)
-    
-    # Raw cell size input constraint
-    raw_cell_size = payload.cellSize if payload.cellSize > 0.5 else 8.0
-    
-    # Enforce grid size cap to prevent OOM / server hangs
-    if (size / res) > max_grid_size:
-        res = size / max_grid_size
-        
-    # To prevent Nyquist aliasing and geometric fragmentation (point-cloud effects),
-    # we enforce that a single cell is resolved by at least 3.0 grid voxel points.
-    min_resolvable_cell = 3.0 * res
-    
-    # Progressive quality degradation: clamp cell size to prevent noise under extreme parameters
-    cell_size = max(raw_cell_size, min_resolvable_cell)
-    
-    # Calculate grid size and meshgrid coordinates
-    grid_size = int(size / res) + 1
-    x = np.linspace(0, size, grid_size)
-    y = np.linspace(0, size, grid_size)
-    z = np.linspace(0, size, grid_size)
-    X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
-    
-    # Compute continuous distance to boundary for box clipping
-    dist_to_boundary = np.minimum(np.minimum(np.minimum(X, size - X), np.minimum(Y, size - Y)), np.minimum(Z, size - Z))
-    
-    # 4. Outer walls (if enabled)
-    if show_shell and wall_t > 0:
-        sdf_wall = wall_t - dist_to_boundary
-    else:
-        sdf_wall = -np.ones_like(X) * size
-              
-    # 5. Calculate spatial cell frequencies
-    k = (2 * np.pi) / cell_size
-    kx = k
-    ky = k
-    kz = k
-    
-    if payload.orientation == "Anisotrópica X":
-        kx = k * 0.5
-    elif payload.orientation == "Anisotrópica Y":
-        ky = k * 0.5
-    elif payload.orientation == "Anisotrópica Z":
-        kz = k * 0.5
-        
-    # 6. Compute continuous signed distance field (SDF) of the infill
-    min_thickness_voxel = 0.65 * res
-    if not for_stl:
-        min_thickness_voxel = max(min_thickness_voxel, cell_size * 0.18)
-    
-    half_width = (infill_pct / 100.0) * 1.5 * infill_thickness
-    if not for_stl:
-        half_width = max(half_width, min_thickness_voxel)
-    else:
-        # Enforce minimum strut thickness of 0.4mm for physical printability of STL files
-        half_width = max(half_width, 0.4)
-        
-    # Optimisation: if density is 100%, render infill as completely solid block
-    if infill_pct >= 98.0:
-        sdf_solid_infill = np.ones_like(X) * size
-    elif pattern == 'gyroid':
-        field = np.sin(kx * X) * np.cos(ky * Y) + np.sin(ky * Y) * np.cos(kz * Z) + np.sin(kz * Z) * np.cos(kx * X)
-        # Cap thresh to prevent complete merging into solid block unless density is 100%
-        thresh = np.clip(half_width * k, 0.05, 1.4)
-        sdf_solid_infill = thresh - np.abs(field)
-        
-    elif pattern == 'honeycomb':
-        scale_x = 0.5 if payload.orientation == "Anisotrópica X" else 1.0
-        scale_y = 0.5 if payload.orientation == "Anisotrópica Y" else 1.0
-        
-        # Tile the space with regular hexagons in the scaled coordinate system
-        r_x = cell_size
-        r_y = np.sqrt(3.0) * cell_size
-        h_x = r_x * 0.5
-        h_y = r_y * 0.5
-        
-        X_s = X * scale_x
-        Y_s = Y * scale_y
-        
-        a_x = np.mod(X_s, r_x) - h_x
-        a_y = np.mod(Y_s, r_y) - h_y
-        
-        b_x = np.mod(X_s - h_x, r_x) - h_x
-        b_y = np.mod(Y_s - h_y, r_y) - h_y
-        
-        dist_a = a_x**2 + a_y**2
-        dist_b = b_x**2 + b_y**2
-        mask = dist_a < dist_b
-        
-        x_rel = np.where(mask, a_x, b_x)
-        y_rel = np.where(mask, a_y, b_y)
-        
-        # Exact signed distance to hexagon boundary
-        d = np.maximum(np.abs(x_rel) * 0.5 + np.abs(y_rel) * (np.sqrt(3.0)/2.0), np.abs(x_rel)) - cell_size / 2.0
-        d = d / min(scale_x, scale_y)
-        
-        # Material thickness logic
-        half_width_hex = (infill_pct / 100.0) * 1.5 * infill_thickness
-        if not for_stl:
-            half_width_hex = max(half_width_hex, min_thickness_voxel)
-            
-        # Cap honeycomb thickness to prevent it from becoming a solid block
-        half_width_hex = min(half_width_hex, 0.45 * cell_size)
-            
-        # The SDF is solid where abs(d) <= half_width_hex
-        sdf_solid_infill = half_width_hex - np.abs(d)
-        
-    elif pattern == 'triply_periodic':
-        field = np.cos(kx * X) + np.cos(ky * Y) + np.cos(kz * Z)
-        half_width_tp = (infill_pct / 100.0) * 2.0 * infill_thickness
-        if not for_stl:
-            half_width_tp = max(half_width_tp, min_thickness_voxel)
-        # Cap thresh to prevent complete merging into solid block
-        thresh = np.clip(half_width_tp * k, 0.05, 2.8)
-        sdf_solid_infill = thresh - np.abs(field)
-        
-    else: # grid / rectilinear
-        grid_spacing_x = cell_size * (2.0 if payload.orientation == "Anisotrópica X" else 1.0)
-        grid_spacing_y = cell_size * (2.0 if payload.orientation == "Anisotrópica Y" else 1.0)
-        grid_spacing_z = cell_size * (2.0 if payload.orientation == "Anisotrópica Z" else 1.0)
-        
-        grid_width = (infill_pct / 100.0) * 3.0 * infill_thickness
-        if not for_stl:
-            grid_width = max(grid_width, min_thickness_voxel)
-            
-        # Cap grid width to keep grid pattern visible
-        grid_width = min(grid_width, 0.45 * cell_size)
-            
-        dist_x = np.abs((X % grid_spacing_x) - grid_spacing_x/2)
-        dist_y = np.abs((Y % grid_spacing_y) - grid_spacing_y/2)
-        dist_z = np.abs((Z % grid_spacing_z) - grid_spacing_z/2)
-        
-        sdf_x = grid_width - dist_x
-        sdf_y = grid_width - dist_y
-        sdf_z = grid_width - dist_z
-        sdf_solid_infill = np.maximum(np.maximum(sdf_x, sdf_y), sdf_z)
-
-    # Clean clip the infill strictly inside the inner cavity (respecting shell thickness)
-    clip_boundary = dist_to_boundary - (wall_t if (show_shell and wall_t > 0) else 0.0)
-    sdf_solid_infill = np.minimum(sdf_solid_infill, clip_boundary)
-                    
-    # Combine wall and infill using standard CSG Union
-    sdf_combined = np.maximum(sdf_wall, sdf_solid_infill)
-    
-    # Pad by 1 pixel to close bounds on outer boundaries
-    sdf_padded = np.pad(sdf_combined, pad_width=1, mode='constant', constant_values=-1.0)
-    
-    try:
-        # Check if volume is uniform
-        if np.all(sdf_padded < 0.0) or np.all(sdf_padded > 0.0):
-            raise ValueError("El volumen es uniforme; no se puede encontrar una isosuperficie.")
-            
-        # Marching cubes at level 0.0 on the continuous SDF grid
-        verts, faces, normals, values = measure.marching_cubes(sdf_padded, level=0.0)
-        
-        # Transform back to original coordinate space
-        verts = (verts - 1) * res
-        
-        # Enforce strict bounding box constraints to prevent lines/geometry outside the cube
-        verts = np.clip(verts, 0.0, size)
-        
-        # Create trimesh and repair holes/normals/winding
-        mesh = trimesh.Trimesh(vertices=verts, faces=faces)
-        trimesh.repair.fix_normals(mesh)
-        trimesh.repair.fix_inversion(mesh)
-        trimesh.repair.fix_winding(mesh)
-        if not mesh.is_watertight:
-            trimesh.repair.fill_holes(mesh)
-        mesh.update_faces(mesh.nondegenerate_faces())
-        mesh.remove_infinite_values()
-        mesh.remove_unreferenced_vertices()
-    except Exception as e:
-        print(f"[CAE Fallback] Marching cubes error: {e}. Generating fallback bounding box geometry.")
-        # Fallback watertight cube representing the boundaries
-        mesh = trimesh.creation.box(extents=[size, size, size])
-        mesh.apply_translation([size / 2, size / 2, size / 2])
-        
-    return mesh
+from backend.src.geometry.compiler import compile_trimesh_geometry
 
 @app.get("/api/materials")
 def get_materials():
@@ -530,7 +335,12 @@ def get_patterns():
         "gyroid": "Gyroid",
         "honeycomb": "Honeycomb",
         "triply_periodic": "Schwarz P",
-        "grid": "Grid (Rectilinear)"
+        "grid": "Grid (Rectilinear)",
+        "diamond": "Diamond",
+        "lidinoid": "Lidinoid",
+        "split_p": "Split P",
+        "neovius": "Neovius",
+        "iwp": "I-WP"
     }
 
 @app.post("/api/generate_stl")
@@ -727,12 +537,10 @@ def export_project(payload: ExportProjectPayload):
             dim_z=size_cm
         )
         print_time_mins = time_data["total_minutes"]
-        mass_g = PhysicsCalculator.estimate_mass(
-            volume_cm3=volume_cm3,
-            infill_percent=infill,
-            material=payload.material,
-            wall_thickness_mm=payload.wallThickness
-        )
+        
+        # Calculate real geometric mass of the compiled mesh
+        from backend.src.optimization.RealMassEstimator import RealMassEstimator
+        mass_g = RealMassEstimator.estimate_mass_g(mesh, payload.material)
 
         # 4. Create simulation metadata
         simulation_metadata = {

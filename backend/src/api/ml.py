@@ -139,19 +139,22 @@ def optimize_config(payload: OptimizePayload):
         if df.empty:
             return {"status": "success", "recommendations": []}
 
-        # Calculate optimization sorting
-        target_name = payload.target
+        # Calculate optimization sorting and map simple string targets
+        target_name = payload.target.lower().strip()
         
-        if target_name == "maximize_energy_absorption":
-            # Sort by energy density or SEA
-            df_sorted = df.sort_values(by="energy_density_MJ_m3", ascending=False, na_position='last')
-        elif target_name == "maximize_strength":
+        if target_name in ["strength", "maximize_strength"]:
             # Sort by max stress
             df_sorted = df.sort_values(by="max_stress_MPa", ascending=False, na_position='last')
-        elif target_name == "maximize_stiffness":
+        elif target_name in ["energy", "maximize_energy_absorption"]:
+            # Sort by energy density or SEA
+            df_sorted = df.sort_values(by="energy_density_MJ_m3", ascending=False, na_position='last')
+        elif target_name in ["stiffness", "maximize_stiffness"]:
             # Sort by Young's Modulus
             df_sorted = df.sort_values(by="young_modulus_MPa", ascending=False, na_position='last')
-        elif target_name == "balance_strength_energy_weight":
+        elif target_name in ["lightweight", "weight"]:
+            # Sort by infill density ascending to minimize mass
+            df_sorted = df.sort_values(by="infill_density_percent", ascending=True, na_position='last')
+        elif target_name in ["balance", "balance_strength_energy_weight"]:
             # Balance composite index
             # Normalise metrics
             max_stress = df["max_stress_MPa"].max()
@@ -165,7 +168,7 @@ def optimize_config(payload: OptimizePayload):
             df["composite_score"] = (stress_factor * 0.4) + (energy_factor * 0.4) + (weight_factor * 0.2)
             df_sorted = df.sort_values(by="composite_score", ascending=False, na_position='last')
         else:
-            raise HTTPException(status_code=400, detail=f"Unknown target optimization: {target_name}")
+            raise HTTPException(status_code=400, detail=f"Unknown target optimization: {payload.target}")
 
         # Drop duplicate specimen configurations to recommend unique setups
         df_sorted = df_sorted.drop_duplicates(subset=["material", "test_type", "infill_pattern", "infill_density_percent"])

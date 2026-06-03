@@ -155,7 +155,7 @@ def validate_config_patch(current_config: Dict[str, Any], config_patch: Dict[str
     pattern = merged.get("pattern")
     if pattern is not None:
         pat_lower = str(pattern).lower().strip()
-        allowed_pats = ["gyroid", "honeycomb", "triply_periodic", "grid"]
+        allowed_pats = ["gyroid", "honeycomb", "triply_periodic", "grid", "diamond", "lidinoid", "split_p", "neovius", "iwp"]
         if pat_lower not in allowed_pats:
             errors.append(f"El patrón '{pattern}' no está soportado. Use uno de: {', '.join(allowed_pats)}.")
 
@@ -171,12 +171,49 @@ def validate_config_patch(current_config: Dict[str, Any], config_patch: Dict[str
     volume_cm3 = PhysicsCalculator.calculate_volume(shape, dim_x, dim_y, dim_z)
     estimated_mass_g = PhysicsCalculator.estimate_mass(volume_cm3, infill_val, mat_val, wall_t_val)
     
+    # Enforce weight limit of 100g by automatically scaling down infill and wall thickness
+    original_mass = estimated_mass_g
+    if estimated_mass_g > 100.0:
+        corrected_infill = infill_val
+        corrected_wall = wall_t_val
+        
+        # 1. Reduce infill first (down to a minimum of 10.0%)
+        while corrected_infill > 10.0 and estimated_mass_g > 100.0:
+            corrected_infill = max(10.0, corrected_infill - 1.0)
+            estimated_mass_g = PhysicsCalculator.estimate_mass(volume_cm3, corrected_infill, mat_val, corrected_wall)
+            
+        # 2. If still > 100.0g, reduce wall thickness (down to a minimum of 1.2mm)
+        while corrected_wall > 1.2 and estimated_mass_g > 100.0:
+            corrected_wall = max(1.2, corrected_wall - 0.1)
+            estimated_mass_g = PhysicsCalculator.estimate_mass(volume_cm3, corrected_infill, mat_val, corrected_wall)
+            
+        # 3. If still > 100.0g, reduce infill down to 5.0%
+        while corrected_infill > 5.0 and estimated_mass_g > 100.0:
+            corrected_infill = max(5.0, corrected_infill - 1.0)
+            estimated_mass_g = PhysicsCalculator.estimate_mass(volume_cm3, corrected_infill, mat_val, corrected_wall)
+            
+        # 4. If still > 100.0g, reduce wall thickness down to 0.8mm
+        while corrected_wall > 0.8 and estimated_mass_g > 100.0:
+            corrected_wall = max(0.8, corrected_wall - 0.1)
+            estimated_mass_g = PhysicsCalculator.estimate_mass(volume_cm3, corrected_infill, mat_val, corrected_wall)
+
+        # Update the patch and merged config
+        corrected_patch["infill"] = round(corrected_infill, 1)
+        corrected_patch["wallThickness"] = round(corrected_wall, 2)
+        merged["infill"] = round(corrected_infill, 1)
+        merged["wallThickness"] = round(corrected_wall, 2)
+        
+        warnings.append(
+            f"El peso estimado original ({original_mass:.1f} g) superaba el límite de 100.0 g. "
+            f"Se ajustaron los parámetros a Infill: {corrected_infill:.1f}%, Pared: {corrected_wall:.2f} mm para cumplir con la restricción."
+        )
+
     # 12. Volume and Mass validation checks
     if volume_cm3 > 125.0:
         errors.append(f"El volumen de la pieza ({volume_cm3:.1f} cm³) supera el límite de 125.0 cm³ (5x5x5 cm).")
         
     if estimated_mass_g > 100.0:
-        errors.append(f"El peso estimado de la pieza ({estimated_mass_g:.1f} g) supera el límite máximo de 100.0 g.")
+        errors.append(f"El peso estimado de la pieza ({estimated_mass_g:.1f} g) supera el límite máximo de 100.0 g incluso tras la optimización.")
 
     # Limit report
     limit_report = {
