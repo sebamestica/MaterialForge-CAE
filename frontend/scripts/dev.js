@@ -44,11 +44,17 @@ async function startOllama() {
         detached: true,
         stdio: "ignore"
       });
+      child.on("error", (err) => {
+        console.warn("[Ollama] Failed to spawn Ollama process (executable might be missing):", err.message);
+      });
       child.unref();
     } else {
       const child = spawn("ollama", ["serve"], {
         detached: true,
         stdio: "ignore"
+      });
+      child.on("error", (err) => {
+        console.warn("[Ollama] Failed to spawn Ollama process (executable might be missing):", err.message);
       });
       child.unref();
     }
@@ -91,8 +97,44 @@ function checkAndBuildDatabase(pythonBin, backendDir) {
   }
 }
 
+// Helper to kill processes on specific ports to avoid conflicts
+function killProcessesOnPorts(ports) {
+  console.log(`[System] Checking and freeing ports: ${ports.join(", ")}...`);
+  for (const port of ports) {
+    try {
+      if (os.platform() === "win32") {
+        const output = execSync(`netstat -ano | findstr :${port}`, { encoding: "utf8" });
+        const lines = output.split("\n");
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length >= 5 && parts[1].endsWith(`:${port}`) && parts[3] === "LISTENING") {
+            const pid = parts[4];
+            if (pid && pid !== "0" && pid !== process.pid.toString()) {
+              console.log(`[System] Port conflict detected: killing process ${pid} on port ${port}...`);
+              execSync(`taskkill /F /PID ${pid}`, { stdio: "ignore" });
+            }
+          }
+        }
+      } else {
+        const pids = execSync(`lsof -t -i:${port}`, { encoding: "utf8" }).trim().split("\n");
+        for (const pid of pids) {
+          if (pid && pid !== process.pid.toString()) {
+            console.log(`[System] Port conflict detected: killing process ${pid} on port ${port}...`);
+            execSync(`kill -9 ${pid}`, { stdio: "ignore" });
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore errors if no process is listening on the port
+    }
+  }
+}
+
 // 4. Main process execution
 async function main() {
+  // Free up ports to avoid conflict
+  killProcessesOnPorts([3000, 8000]);
+
   // Start Ollama
   await startOllama();
 

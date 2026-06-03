@@ -432,20 +432,39 @@ def variants_endpoint(config: Dict[str, Any] = Body(default_factory=dict)):
         print(f"[VARIANTS] TabularStore query failed: {e}")
         best_str_list, best_en_list, best_bal_list = [], [], []
 
+    def _get_float(d, key, default):
+        v = d.get(key)
+        if v is None:
+            return default
+        try:
+            import math
+            fv = float(v)
+            if math.isnan(fv):
+                return default
+            return fv
+        except (ValueError, TypeError):
+            return default
+
+    def _get_str(d, key, default):
+        v = d.get(key)
+        if v is None:
+            return default
+        return str(v)
+
     # Map candidate 1 (Strength)
     cand_str = None
     if best_str_list:
         rec = best_str_list[0]
         cand_str = {
             "name": "Opción 1: Resistencia Máxima a Compresión",
-            "material": str(rec.get("material", "PLA")).upper(),
-            "infill": float(rec.get("infill_density_percent", 70.0)),
-            "pattern": str(rec.get("infill_pattern", "gyroid")).lower(),
-            "cellSize": float(rec.get("cell_size_mm", 4.5) or 4.5),
-            "wallThickness": float(rec.get("wall_thickness_mm", 1.6)),
-            "printSpeed": float(rec.get("print_speed_mm_s", 45.0)),
-            "layerHeight": float(rec.get("layer_height_mm", 0.2)),
-            "desc": f"Configuración óptima de alta resistencia basada en probeta real con esfuerzo de {rec.get('max_stress_MPa', 0.0):.1f} MPa."
+            "material": _get_str(rec, "material", "PLA").upper(),
+            "infill": _get_float(rec, "infill_density_percent", 70.0),
+            "pattern": _get_str(rec, "infill_pattern", "gyroid").lower(),
+            "cellSize": _get_float(rec, "cell_size_mm", 4.5),
+            "wallThickness": _get_float(rec, "wall_thickness_mm", 1.6),
+            "printSpeed": _get_float(rec, "print_speed_mm_s", 45.0),
+            "layerHeight": _get_float(rec, "layer_height_mm", 0.2),
+            "desc": f"Configuración óptima de alta resistencia basada en probeta real con esfuerzo de {_get_float(rec, 'max_stress_MPa', 0.0):.1f} MPa."
         }
     else:
         # High score fallback for Strength
@@ -467,14 +486,14 @@ def variants_endpoint(config: Dict[str, Any] = Body(default_factory=dict)):
         rec = best_en_list[0]
         cand_en = {
             "name": "Opción 2: Máxima Absorción de Energía",
-            "material": str(rec.get("material", "TPU")).upper(),
-            "infill": float(rec.get("infill_density_percent", 60.0)),
-            "pattern": str(rec.get("infill_pattern", "gyroid")).lower(),
-            "cellSize": float(rec.get("cell_size_mm", 4.0) or 4.0),
-            "wallThickness": float(rec.get("wall_thickness_mm", 1.6)),
-            "printSpeed": float(rec.get("print_speed_mm_s", 25.0)),
-            "layerHeight": float(rec.get("layer_height_mm", 0.2)),
-            "desc": f"Configuración optimizada de absorción basada en ensayo experimental de {rec.get('energy_density_MJ_m3', 0.0):.2f} MJ/m³."
+            "material": _get_str(rec, "material", "TPU").upper(),
+            "infill": _get_float(rec, "infill_density_percent", 60.0),
+            "pattern": _get_str(rec, "infill_pattern", "gyroid").lower(),
+            "cellSize": _get_float(rec, "cell_size_mm", 4.0),
+            "wallThickness": _get_float(rec, "wall_thickness_mm", 1.6),
+            "printSpeed": _get_float(rec, "print_speed_mm_s", 25.0),
+            "layerHeight": _get_float(rec, "layer_height_mm", 0.2),
+            "desc": f"Configuración optimizada de absorción basada en ensayo experimental de {_get_float(rec, 'energy_density_MJ_m3', 0.0):.2f} MJ/m³."
         }
     else:
         # High score fallback for Energy
@@ -496,13 +515,13 @@ def variants_endpoint(config: Dict[str, Any] = Body(default_factory=dict)):
         rec = best_bal_list[0]
         cand_bal = {
             "name": "Opción 3: Balance Eficiente de Peso y Tiempo",
-            "material": str(rec.get("material", base_config.get("material", "PLA"))).upper(),
-            "infill": float(rec.get("infill_density_percent", 45.0)),
-            "pattern": str(rec.get("infill_pattern", "gyroid")).lower(),
-            "cellSize": float(rec.get("cell_size_mm", 5.0) or 5.0),
-            "wallThickness": float(rec.get("wall_thickness_mm", 1.2)),
-            "printSpeed": float(rec.get("print_speed_mm_s", 50.0)),
-            "layerHeight": float(rec.get("layer_height_mm", 0.2)),
+            "material": _get_str(rec, "material", base_config.get("material", "PLA")).upper(),
+            "infill": _get_float(rec, "infill_density_percent", 45.0),
+            "pattern": _get_str(rec, "infill_pattern", "gyroid").lower(),
+            "cellSize": _get_float(rec, "cell_size_mm", 5.0),
+            "wallThickness": _get_float(rec, "wall_thickness_mm", 1.2),
+            "printSpeed": _get_float(rec, "print_speed_mm_s", 50.0),
+            "layerHeight": _get_float(rec, "layer_height_mm", 0.2),
             "desc": f"Configuración balanceada derivada del dataset experimental, maximizando eficiencia mecánica por masa."
         }
     else:
