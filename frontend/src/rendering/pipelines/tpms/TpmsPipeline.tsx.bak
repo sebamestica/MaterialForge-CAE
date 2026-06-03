@@ -6,7 +6,6 @@ import { useLabStore } from "@/stores/useLabStore";
 import { Bvh } from "@react-three/drei";
 import { PipelineProps } from "../types";
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from "three-mesh-bvh";
-import { useFrame } from "@react-three/fiber";
 
 // Extend BufferGeometry and Mesh prototypes at file scope to accelerate raycasting and clipping
 if (typeof window !== "undefined" && !THREE.BufferGeometry.prototype.computeBoundsTree) {
@@ -25,7 +24,7 @@ function fastHslToRgb(h: number): [number, number, number] {
   return [0, 0, 1];
 }
 
-export function TpmsPipeline({ vertices, faces, mode, material, size, sliceHeight, isInteracting }: PipelineProps) {
+export function TpmsPipeline({ vertices, faces, mode, material, size, sliceHeight }: PipelineProps) {
   const appliedForce = useLabStore((state) => state.appliedForce);
   const predictions = useLabStore((state) => state.predictions);
   const infill = useLabStore((state) => state.infill);
@@ -35,125 +34,60 @@ export function TpmsPipeline({ vertices, faces, mode, material, size, sliceHeigh
 
   const baseStressCacheRef = useRef<Float32Array | null>(null);
 
-  // 1. Partition the unified mesh into 8 spatial octants for dynamic frustum culling
-  interface OctantData {
-    geom: THREE.BufferGeometry;
-    center: THREE.Vector3;
-    originalIndices: Int32Array;
-  }
-
-  const octants = useMemo(() => {
-    if (vertices.length === 0 || faces.length === 0) return [];
-    
-    const numFaces = faces.length / 3;
-    const half = size / 2;
-    
-    // Group faces by octant based on their centroid position
-    const octantFaces: number[][] = Array.from({ length: 8 }, () => []);
-    
-    for (let f = 0; f < numFaces; f++) {
-      const i1 = faces[f * 3];
-      const i2 = faces[f * 3 + 1];
-      const i3 = faces[f * 3 + 2];
-      
-      const cx = (vertices[i1 * 3] + vertices[i2 * 3] + vertices[i3 * 3]) / 3;
-      const cy = (vertices[i1 * 3 + 1] + vertices[i2 * 3 + 1] + vertices[i3 * 3 + 1]) / 3;
-      const cz = (vertices[i1 * 3 + 2] + vertices[i2 * 3 + 2] + vertices[i3 * 3 + 2]) / 3;
-      
-      const bitX = cx >= half ? 1 : 0;
-      const bitY = cy >= half ? 2 : 0;
-      const bitZ = cz >= half ? 4 : 0;
-      const octIdx = bitX | bitY | bitZ;
-      
-      octantFaces[octIdx].push(i1, i2, i3);
-    }
-    
-    const result: OctantData[] = [];
-    
-    for (let o = 0; o < 8; o++) {
-      const oFaces = octantFaces[o];
-      if (oFaces.length === 0) continue;
-      
-      // Extract sub-geometry vertices and build local index maps
-      const usedVertsMap = new Map<number, number>();
-      const subVerts: number[] = [];
-      const subFaces: number[] = [];
-      const originalIndicesList: number[] = [];
-      
-      for (const originalIdx of oFaces) {
-        if (!usedVertsMap.has(originalIdx)) {
-          const newIdx = subVerts.length / 3;
-          usedVertsMap.set(originalIdx, newIdx);
-          subVerts.push(
-            vertices[originalIdx * 3],
-            vertices[originalIdx * 3 + 1],
-            vertices[originalIdx * 3 + 2]
-          );
-          originalIndicesList.push(originalIdx);
-        }
-        subFaces.push(usedVertsMap.get(originalIdx)!);
-      }
-      
-      const geom = new THREE.BufferGeometry();
-      geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(subVerts), 3));
-      geom.setAttribute("color", new THREE.BufferAttribute(new Float32Array(subVerts.length), 3));
-      geom.setIndex(new THREE.BufferAttribute(new Uint32Array(subFaces), 1));
-      geom.computeVertexNormals();
-      
-      if (geom.computeBoundsTree) {
-        geom.computeBoundsTree({ strategy: 1 });
-      }
-      
-      geom.computeBoundingBox();
-      const center = new THREE.Vector3();
-      if (geom.boundingBox) {
-        geom.boundingBox.getCenter(center);
-      }
-      
-      result.push({
-        geom,
-        center,
-        originalIndices: new Int32Array(originalIndicesList)
-      });
-    }
-    
-    return result;
-  }, [vertices, faces, size]);
-
-  // Clean up geometries and BVH bounds tree to prevent VRAM memory leak
-  useEffect(() => {
-    return () => {
-      octants.forEach(({ geom }) => {
-        if (geom.disposeBoundsTree) {
-          geom.disposeBoundsTree();
-        }
-        geom.dispose();
-      });
-    };
-  }, [octants]);
-
-  // Unified geometry for the slicer indicator only
+  // 1. Compile static geometry (position & index only)
   const geometry = useMemo(() => {
     const geom = new THREE.BufferGeometry();
     if (vertices.length === 0 || faces.length === 0) return geom;
-    geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(vertices), 3));
-    geom.setIndex(new THREE.BufferAttribute(new Uint32Array(faces), 1));
+
+    const verticesFloat32 = new Float32Array(vertices);
+    const indicesUint32 = new Uint32Array(faces);
+
+    geom.setAttribute("position", new THREE.BufferAttribute(verticesFloat32, 3));
+    geom.setIndex(new THREE.BufferAttribute(indicesUint32, 1));
+
+    // Initialize custom color attribute buffer
+    const colorsFloat32 = new Float32Array(vertices.length);
+    geom.setAttribute("color", new THREE.BufferAttribute(colorsFloat32, 3));
+
     geom.computeVertexNormals();
+
+    // Accelerate raycasting, slicing, and rendering inside Three.js using three-mesh-bvh
+    if (geom.computeBoundsTree) {
+      geom.computeBoundsTree({
+        strategy: 1, // CENTER strategy is highly optimal for dynamic model updates
+      });
+    }
+
     return geom;
   }, [vertices, faces]);
 
+  // Clean up geometry and BVH bounds tree to prevent VRAM memory leak
   useEffect(() => {
     return () => {
+      if (geometry.disposeBoundsTree) {
+        geometry.disposeBoundsTree();
+      }
       geometry.dispose();
     };
   }, [geometry]);
 
-  const meshRefs = useRef<(THREE.Mesh | null)[]>([]);
-  useEffect(() => {
-    meshRefs.current = meshRefs.current.slice(0, octants.length);
-  }, [octants]);
-
+  const meshRef = useRef<THREE.Mesh | null>(null);
   const prevMaterialRef = useRef<THREE.Material | THREE.Material[] | null>(null);
+
+  // Clean up materials when they change to prevent VRAM memory leak
+  useEffect(() => {
+    if (meshRef.current) {
+      const currentMat = meshRef.current.material;
+      if (prevMaterialRef.current && prevMaterialRef.current !== currentMat) {
+        if (Array.isArray(prevMaterialRef.current)) {
+          prevMaterialRef.current.forEach((m) => m.dispose());
+        } else {
+          prevMaterialRef.current.dispose();
+        }
+      }
+      prevMaterialRef.current = currentMat;
+    }
+  }, [mode, material]);
 
   // Clean up materials on unmount
   useEffect(() => {
@@ -246,11 +180,15 @@ export function TpmsPipeline({ vertices, faces, mode, material, size, sliceHeigh
     baseStressCacheRef.current = cache;
   }, [vertices, size, material, pattern, cellSize, orientation]);
 
-  // 2. Perform in-place updates of the sub-geometries color buffer attribute on appliedForce updates (prevents geometry re-creations)
+  // 2. Perform in-place updates of the color buffer attribute on appliedForce updates (prevents geometry re-creations)
   useEffect(() => {
     if (mode !== "heatmap") return;
-    if (vertices.length === 0 || octants.length === 0 || !baseStressCacheRef.current) return;
+    if (vertices.length === 0 || !geometry || !baseStressCacheRef.current) return;
+    const colorAttr = geometry.getAttribute("color") as THREE.BufferAttribute;
+    if (!colorAttr) return;
 
+    const numVerts = vertices.length / 3;
+    const tempColors = new Float32Array(vertices.length);
     // Baseline preload of 150N to show a beautiful preview gradient when force is 0
     const loadFactor = Math.max(150.0, appliedForce) / 1000.0;
     const isTPU = material.toUpperCase() === "TPU";
@@ -260,29 +198,21 @@ export function TpmsPipeline({ vertices, faces, mode, material, size, sliceHeigh
 
     const cache = baseStressCacheRef.current;
 
-    for (const { geom, originalIndices } of octants) {
-      const colorAttr = geom.getAttribute("color") as THREE.BufferAttribute;
-      if (!colorAttr) continue;
+    for (let i = 0; i < numVerts; i++) {
+      const baseStress = cache[i];
+      const stress = baseStress * forceScale;
       
-      const numVerts = originalIndices.length;
-      const tempColors = new Float32Array(numVerts * 3);
-      
-      for (let i = 0; i < numVerts; i++) {
-        const originalIdx = originalIndices[i];
-        const baseStress = cache[originalIdx];
-        const stress = baseStress * forceScale;
-        
-        const hue = (1.0 - Math.min(1.0, stress)) * 240.0;
-        const rgb = fastHslToRgb(hue);
-        tempColors[i * 3] = rgb[0];
-        tempColors[i * 3 + 1] = rgb[1];
-        tempColors[i * 3 + 2] = rgb[2];
-      }
-      
-      colorAttr.copyArray(tempColors);
-      colorAttr.needsUpdate = true;
+      const hue = (1.0 - Math.min(1.0, stress)) * 240.0;
+      const rgb = fastHslToRgb(hue);
+      tempColors[i * 3] = rgb[0];
+      tempColors[i * 3 + 1] = rgb[1];
+      tempColors[i * 3 + 2] = rgb[2];
     }
-  }, [octants, mode, appliedForce, material, infill]);
+
+    // Direct, highly efficient in-place buffer modification in GPU VRAM
+    colorAttr.copyArray(tempColors);
+    colorAttr.needsUpdate = true;
+  }, [geometry, vertices, mode, appliedForce, material, infill]);
 
   interface PbrParams {
     roughness: number;
@@ -337,45 +267,6 @@ export function TpmsPipeline({ vertices, faces, mode, material, size, sliceHeigh
     return new THREE.Plane(new THREE.Vector3(0, 0, -1), sh - half);
   }, [sliceHeight, size]);
 
-  // Dynamic Occlusion Culling, Shadow Culling and Material Simplification in useFrame
-  useFrame(({ camera }) => {
-    if (octants.length === 0) return;
-    const sizeHalf = size / 2;
-    const centerLoc = new THREE.Vector3(sizeHalf, sizeHalf, sizeHalf);
-    const camPos = camera.position;
-    const camDist = camPos.length();
-
-    for (let i = 0; i < octants.length; i++) {
-      const mesh = meshRefs.current[i];
-      if (!mesh) continue;
-
-      const chunk = octants[i];
-      const relativeCenter = chunk.center.clone().sub(centerLoc);
-
-      // Check if chunk is in the back half relative to the camera
-      const dot = camPos.x * relativeCenter.x + camPos.y * relativeCenter.y + camPos.z * relativeCenter.z;
-      const isBack = dot < -0.18 * size * camDist;
-
-      // 1. Dynamic shadow culling
-      // If back-facing or the user is actively rotating/interacting, disable shadow casting
-      const shouldCastShadow = !isBack && !isInteracting;
-      if (mesh.castShadow !== shouldCastShadow) {
-        mesh.castShadow = shouldCastShadow;
-      }
-
-      // 2. Material parameter simplification for back chunks to speed up GPU shading
-      const mat = mesh.material as THREE.MeshPhysicalMaterial;
-      if (mat) {
-        if (mode === "solid" || mode === "heatmap") {
-          const targetClearcoat = isBack ? 0.0 : pbrParams.clearcoat;
-          const targetMetalness = isBack ? pbrParams.metalness * 0.4 : pbrParams.metalness;
-          if (mat.clearcoat !== targetClearcoat) mat.clearcoat = targetClearcoat;
-          if (mat.metalness !== targetMetalness) mat.metalness = targetMetalness;
-        }
-      }
-    }
-  });
-
   if (vertices.length === 0 || faces.length === 0) {
     return (
       <mesh>
@@ -396,10 +287,6 @@ export function TpmsPipeline({ vertices, faces, mode, material, size, sliceHeigh
   const isHeatmap = mode === "heatmap";
   const isShell = mode === "shell";
 
-  // DoubleSide is only required for transparent/wireframe/slicer modes.
-  // FrontSide is used for Solid/Heatmap watertight structures (doubles rendering speed by GPU-culling backfaces)
-  const side = (isTransparent || isSlicer || isWireframe) ? THREE.DoubleSide : THREE.FrontSide;
-
   // Calculate physical compression deformation factors (Y is vertical in Three.js)
   const maxDeform = predictions?.deformationMm || 4.0;
   const deformationMm = (appliedForce / 1000.0) * maxDeform;
@@ -413,56 +300,46 @@ export function TpmsPipeline({ vertices, faces, mode, material, size, sliceHeigh
       scale={[1, 1 - compressionFactor, 1]}
     >
       <Bvh firstHitOnly>
-        {octants.map((chunk, idx) => (
-          <mesh
-            key={`chunk-${idx}-${mode}-${material}`}
-            ref={(el) => {
-              meshRefs.current[idx] = el;
-            }}
-            geometry={chunk.geom}
-            castShadow
-            receiveShadow
-          >
-            {isHeatmap ? (
-              <meshPhysicalMaterial
-                key={`heatmap-mat-${idx}`}
-                vertexColors
-                roughness={0.18}
-                metalness={0.15}
-                clearcoat={0.95}
-                clearcoatRoughness={0.06}
-                side={side}
-                flatShading={false}
-                clippingPlanes={isSlicer && clippingPlane ? [clippingPlane] : undefined}
-              />
-            ) : isShell ? (
-              <meshPhysicalMaterial
-                key={`shell-mat-${idx}`}
-                color="#2563eb"
-                wireframe={true}
-                roughness={0.3}
-                metalness={0.8}
-                side={side}
-                flatShading={false}
-              />
-            ) : (
-              <meshPhysicalMaterial
-                key={`physical-mat-${idx}-${material}`}
-                color={pbrParams.color}
-                roughness={pbrParams.roughness}
-                metalness={pbrParams.metalness}
-                clearcoat={pbrParams.clearcoat}
-                clearcoatRoughness={pbrParams.clearcoatRoughness || 0.1}
-                wireframe={isWireframe}
-                transparent={isTransparent || isSlicer}
-                opacity={isTransparent ? 0.35 : isSlicer ? 0.25 : 1.0}
-                side={side}
-                clippingPlanes={isSlicer && clippingPlane ? [clippingPlane] : undefined}
-                flatShading={false}
-              />
-            )}
-          </mesh>
-        ))}
+        <mesh ref={meshRef} geometry={geometry} castShadow receiveShadow>
+          {isHeatmap ? (
+            <meshPhysicalMaterial
+              key={`heatmap-mat-${mode}`}
+              vertexColors
+              roughness={0.18}
+              metalness={0.15}
+              clearcoat={0.95}
+              clearcoatRoughness={0.06}
+              side={THREE.DoubleSide}
+              flatShading={false}
+              clippingPlanes={isSlicer && clippingPlane ? [clippingPlane] : undefined}
+            />
+          ) : isShell ? (
+            <meshPhysicalMaterial
+              key="shell-mat"
+              color="#2563eb"
+              wireframe={true}
+              roughness={0.3}
+              metalness={0.8}
+              side={THREE.DoubleSide}
+              flatShading={false}
+            />
+          ) : (
+            <meshPhysicalMaterial
+              key={`physical-mat-${mode}-${material}`}
+              color={pbrParams.color}
+              roughness={pbrParams.roughness}
+              metalness={pbrParams.metalness}
+              clearcoat={pbrParams.clearcoat}
+              clearcoatRoughness={pbrParams.clearcoatRoughness || 0.1}
+              wireframe={isWireframe}
+              transparent={isTransparent || isSlicer}
+              opacity={isTransparent ? 0.35 : isSlicer ? 0.25 : 1.0}
+              side={THREE.DoubleSide}
+              clippingPlanes={isSlicer && clippingPlane ? [clippingPlane] : undefined}
+              flatShading={false}
+            />
+          )}
+        </mesh>
       </Bvh>
 
       {/* Render sliced toolpath indicator */}

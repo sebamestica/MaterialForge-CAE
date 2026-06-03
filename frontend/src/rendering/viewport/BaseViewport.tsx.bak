@@ -282,7 +282,6 @@ function PrintEstimationHUD() {
 }
 
 export default function BaseViewport() {
-  const [isInteracting, setIsInteracting] = React.useState(false);
   const {
     dimX,
     viewportMode,
@@ -426,7 +425,6 @@ export default function BaseViewport() {
                material={material}
                size={sizeMm}
                sliceHeight={sliceHeight}
-               isInteracting={isInteracting}
             />
             <DimensionLines size={sizeMm} />
             
@@ -445,13 +443,7 @@ export default function BaseViewport() {
             )}
           </group>
 
-          <OrbitControls
-            makeDefault
-            enableDamping
-            dampingFactor={0.05}
-            onStart={() => setIsInteracting(true)}
-            onEnd={() => setIsInteracting(false)}
-          />
+          <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
         </Canvas>
       </div>
 

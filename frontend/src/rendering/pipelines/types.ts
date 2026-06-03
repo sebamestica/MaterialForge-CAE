@@ -5,4 +5,5 @@ export interface PipelineProps {
   material: string;
   size: number;
   sliceHeight: number;
+  isInteracting?: boolean;
 }
