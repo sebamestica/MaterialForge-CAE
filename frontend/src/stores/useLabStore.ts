@@ -174,7 +174,10 @@ const fetchWithRetry = async (url: string, options?: RequestInit, retries = 6, d
     const res = await fetch(url, options);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     return res;
-  } catch (err) {
+  } catch (err: any) {
+    if (err.name === "AbortError" || options?.signal?.aborted) {
+      throw err;
+    }
     if (retries > 0) {
       await new Promise((resolve) => setTimeout(resolve, delay));
       return fetchWithRetry(url, options, retries - 1, delay * 1.5);
@@ -377,7 +380,7 @@ export const useLabStore = create<LabState>((set, get) => ({
       };
 
       try {
-        const res = await fetch(`${BACKEND_URL}/api/predict_structural_load`, {
+        const res = await fetchWithRetry(`${BACKEND_URL}/api/predict_structural_load`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -483,7 +486,7 @@ export const useLabStore = create<LabState>((set, get) => ({
       };
 
       try {
-        const res = await fetch(`${BACKEND_URL}/api/generate_mesh`, {
+        const res = await fetchWithRetry(`${BACKEND_URL}/api/generate_mesh`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

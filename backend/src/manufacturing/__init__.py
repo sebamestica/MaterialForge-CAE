@@ -2,7 +2,7 @@ from .validation import validate_mesh
 from .repair import repair_mesh
 from .printers import get_printer_profile
 from .ml_postprocess import run_ml_manufacturing_optimization
-from .slicer_profiles import generate_orca_profile, generate_cura_profile, generate_prusa_profile
+from .slicer_profiles import generate_orca_profile
 from .reports import generate_reports
 from .packaging import package_manufacturing_zip
 
@@ -12,8 +12,7 @@ __all__ = [
     "get_printer_profile",
     "run_ml_manufacturing_optimization",
     "generate_orca_profile",
-    "generate_cura_profile",
-    "generate_prusa_profile",
     "generate_reports",
     "package_manufacturing_zip"
 ]
+

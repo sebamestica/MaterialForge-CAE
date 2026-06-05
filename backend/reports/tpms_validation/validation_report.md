@@ -1,11 +1,11 @@
 # TPMS Geometry Validation Report
-Generated: 2026-06-02 23:55:03
+Generated: 2026-06-04 22:00:09
 
 | Pattern | Vertices | Faces | Gen Time (s) | Watertight | Valid Volume |
 | --- | --- | --- | --- | --- | --- |
-| Gyroid | 98911 | 200766 | 4.743 | True | True |
-| Honeycomb | 83425 | 167526 | 3.765 | True | True |
-| Schwarz P | 87421 | 176922 | 4.062 | True | True |
+| Gyroid | 98911 | 200766 | 1.755 | True | True |
+| Honeycomb | 83425 | 167526 | 1.409 | True | True |
+| Schwarz P | 87421 | 176922 | 1.500 | True | True |
 
 ### Verification Summary
 - **Watertightness**: Verifies that the solid volume is completely closed without open holes.

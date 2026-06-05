@@ -35,8 +35,6 @@ from src.manufacturing import (
     get_printer_profile,
     run_ml_manufacturing_optimization,
     generate_orca_profile,
-    generate_cura_profile,
-    generate_prusa_profile,
     generate_reports,
     package_manufacturing_zip
 )
@@ -51,7 +49,7 @@ app.include_router(copilot_router)
 
 
 # Hardened CORS policy utilizing environment-variable based origin restrictions
-ALLOWED_ORIGINS_ENV = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.2:3000")
+ALLOWED_ORIGINS_ENV = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.2:3000,http://192.168.56.1:3000,*")
 ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_ENV.split(",") if origin.strip()]
 
 allow_credentials = True
@@ -165,122 +163,67 @@ def predict_structural_load(payload: PredictionPayload):
     if payload.slicing.shellThicknessMm < 0.0 or payload.slicing.shellThicknessMm > 15.0:
         raise HTTPException(status_code=400, detail="Shell thickness must be between 0.0 and 15.0 mm.")
         
-    infill = payload.slicing.infillPercentage
-    pattern = payload.slicing.patternType
-    mat_type = payload.material.type
-    
-    # Calculate bounding box area
-    box = payload.geometry.boundingBoxMm # [x, y, z] in mm
-    area = box[0] * box[1] if len(box) >= 2 else 2500.0 # area mm2
-    volume = payload.geometry.volumeMm3
-    
-    pred_payload = {
-        "material": mat_type,
-        "test_type": "compression",
-        "layer_height_mm": payload.slicing.layerHeightMm or 0.2,
-        "wall_thickness_mm": payload.slicing.shellThicknessMm,
-        "infill_density_percent": infill,
-        "infill_pattern": pattern,
-        "nozzle_temperature_C": payload.material.extrusionTempC or 210.0,
-        "bed_temperature_C": 60.0,
-        "print_speed_mm_s": 50.0,
-        "print_orientation_deg": payload.slicing.printOrientationDeg,
-        "cell_size_mm": 8.0
-    }
-    
     try:
-        from src.api.ml import predictor
-        res = predictor.predict_mechanical_properties(pred_payload)
-        preds = res["predictions"]
-        
-        strength = preds["max_stress_MPa"]["value"] or (25.4 + infill * 0.3)
-        modulus = preds["young_modulus_MPa"]["value"] or (1500.0 if mat_type == "pla" else 80.0)
-        energy_dens = preds["energy_density_MJ_m3"]["value"] or (10.0)
-        
-        # Calculate force from stress and area (MPa = N/mm2 => N = MPa * mm2)
-        max_force = strength * area
-        # Stiffness = E * Area / Length
-        stiffness = (modulus * area) / box[2] if len(box) >= 3 and box[2] > 0 else 100.0
-        # Energy = energy_density * volume (MJ/m3 = J/cm3 = J/1000mm3 => J = energy_density * volume / 1000)
-        energy_j = (energy_dens * volume) / 1000.0 if volume > 0 else (14.5 + infill * 0.15)
-        
-        confidence = res["confidenceScore"]
-        model_used = res["modelUsed"]
-        warnings = res["warnings"]
+        from src.ml.predict import run_unified_prediction_service
+        data = run_unified_prediction_service(payload.dict())
     except Exception as e:
-        print(f"Error in predict_structural_load redirect: {e}")
+        print(f"Error in predict_structural_load unified service: {e}")
         # fallback
+        infill = payload.slicing.infillPercentage
+        box = payload.geometry.boundingBoxMm
+        area = box[0] * box[1] if len(box) >= 2 else 2500.0
+        volume = payload.geometry.volumeMm3
         strength = 25.4 + (infill * 0.3)
-        max_force = 450 + (infill * 12)
-        energy_j = 14.5 + (infill * 0.15)
-        stiffness = 120 + (infill * 4)
-        confidence = 0.50
-        model_used = "Python_Heuristic_Proxy"
-        warnings = []
-
-    # Map warnings format
-    out_warnings = []
-    for w in warnings:
-        out_warnings.append({"code": w["code"], "severity": w["severity"], "text": w["text"]})
+        max_force = strength * area
+        energy_j = (10.0 * volume) / 1000.0 if volume > 0 else 14.5 + (infill * 0.15)
+        stiffness = (1500.0 * area) / box[2] if len(box) >= 3 and box[2] > 0 else 100.0
         
+        data = {
+            "strength_MPa": strength,
+            "max_force_N": max_force,
+            "energy_J": energy_j,
+            "stiffness_N_mm": stiffness,
+            "mass_g": 0.0,
+            "print_time_seconds": 0.0,
+            "time_breakdown": {},
+            "confidence": 0.50,
+            "model_used": "Python_Heuristic_Proxy",
+            "warnings": [],
+            "infill_density": infill
+        }
+
+    infill = payload.slicing.infillPercentage
+    out_warnings = []
+    for w in data.get("warnings", []):
+        if isinstance(w, dict):
+            out_warnings.append({"code": w.get("code", "W_WARN"), "severity": w.get("severity", "medium"), "text": w.get("text", "")})
+        else:
+            out_warnings.append({"code": "W_WARN", "severity": "medium", "text": str(w)})
+            
     if infill < 10:
         out_warnings.append({"code": "W_LOW_INFILL", "severity": "high", "text": "Infill too low. High risk of shell collapse."})
-
-    from ia_agent.tools.physics_calculator import PhysicsCalculator
-    volume_cm3 = payload.geometry.volumeMm3 / 1000.0
-    
-    mass_g = PhysicsCalculator.estimate_mass(
-        volume_cm3=volume_cm3,
-        infill_percent=infill,
-        material=payload.material.type,
-        wall_thickness_mm=payload.slicing.shellThicknessMm
-    )
-    
-    box = payload.geometry.boundingBoxMm
-    dim_x = box[0] / 10.0 if len(box) >= 1 else 5.0
-    dim_y = box[1] / 10.0 if len(box) >= 2 else 5.0
-    dim_z = box[2] / 10.0 if len(box) >= 3 else 5.0
-    
-    speed_setting = payload.slicing.printSpeedMmS or 50.0
-    printer_setting = payload.printerName or "Creality K1 Max"
-    
-    time_data = PhysicsCalculator.estimate_print_time(
-        volume_cm3=volume_cm3,
-        infill_percent=infill,
-        speed_mm_s=speed_setting,
-        layer_height_mm=payload.slicing.layerHeightMm or 0.2,
-        material=payload.material.type,
-        printer_name=printer_setting,
-        wall_thickness_mm=payload.slicing.shellThicknessMm,
-        pattern=pattern,
-        dim_x=dim_x,
-        dim_y=dim_y,
-        dim_z=dim_z
-    )
-    
-    print_time_mins = time_data["total_minutes"]
-    est_time_seconds = print_time_mins * 60
 
     return {
         "predictionId": f"py_pred_{random.randint(1000,9999)}",
         "mechanical": {
-            "yieldStrengthMpa": strength,
-            "maxForceNewtons": max_force,
+            "yieldStrengthMpa": data["strength_MPa"],
+            "maxForceNewtons": data["max_force_N"],
             "deformationMm": 4.2 - (infill * 0.02),
-            "stiffnessNmm": stiffness,
-            "energyAbsorptionJoules": energy_j
+            "stiffnessNmm": data["stiffness_N_mm"],
+            "energyAbsorptionJoules": data["energy_J"]
         },
         "manufacturing": {
             "printabilityScore": 45 if infill < 10 else 85,
             "materialEfficiency": 88 if payload.source == 'experimental_lab' else 72,
-            "estimatedMassGrams": mass_g,
-            "estimatedTimeSeconds": est_time_seconds,
-            "timeBreakdown": time_data["breakdown"],
+            "estimatedMassGrams": data["mass_g"],
+            "estimatedTimeSeconds": data["print_time_seconds"],
+            "timeBreakdown": data["time_breakdown"],
             "warnings": out_warnings
         },
-        "confidenceScore": confidence,
-        "modelUsed": model_used
+        "confidenceScore": data["confidence"],
+        "modelUsed": data["model_used"]
     }
+
 
 
 class STLOptPayload(BaseModel):
@@ -775,11 +718,24 @@ def postprocess_manufacturing(payload: AIPostprocessPayload):
         )
         original_mesh = compile_trimesh_geometry(stl_payload, for_stl=False)
         
-        # 2. Geometry validation
-        validation_res = validate_mesh(original_mesh, payload.wallThickness)
+        # 2. Geometry validation of original mesh
+        validation_res = validate_mesh(
+            original_mesh, 
+            wall_thickness_mm=payload.wallThickness,
+            cell_size_mm=payload.cellSize,
+            infill_density_percent=payload.infillDensity
+        )
         
-        # 3. Automatic mesh repair
+        # 3. Automatic mesh repair (Raises ValueError if safety validation fails)
         repaired_mesh = repair_mesh(original_mesh)
+        
+        # 3b. Validate repaired mesh
+        repaired_validation_res = validate_mesh(
+            repaired_mesh,
+            wall_thickness_mm=payload.wallThickness,
+            cell_size_mm=payload.cellSize,
+            infill_density_percent=payload.infillDensity
+        )
         
         # 4. Printer specs
         printer_profile = get_printer_profile(payload.printerName)
@@ -795,49 +751,98 @@ def postprocess_manufacturing(payload: AIPostprocessPayload):
             printer_profile=printer_profile
         )
         
+        # Determine print temperature
+        nozzle_temp = 210.0
+        if payload.material.lower() == "tpu":
+            nozzle_temp = 230.0
+        elif payload.material.lower() == "abs":
+            nozzle_temp = 250.0
+            
+        # Run mechanical predictions using unified service
+        pred_config = {
+            "source": "api_postprocess",
+            "geometry": {
+                "boundingBoxMm": [payload.size, payload.size, payload.size],
+                "volumeMm3": float(repaired_mesh.volume)
+            },
+            "material": {
+                "type": payload.material.lower(),
+                "extrusionTempC": nozzle_temp
+            },
+            "slicing": {
+                "patternType": payload.pattern.lower(),
+                "infillPercentage": payload.infillDensity,
+                "shellThicknessMm": payload.wallThickness,
+                "layerHeightMm": ml_settings.get("recommended_layer_height_mm", 0.2),
+                "printSpeedMmS": ml_settings.get("recommended_speed_mms", 50.0),
+                "printOrientationDeg": 0.0 if payload.orientation == "Isotrópica" else 90.0
+            },
+            "printerName": payload.printerName,
+            "cellSize": payload.cellSize
+        }
+        
+        try:
+            from src.ml.predict import run_unified_prediction_service
+            predictions_res = run_unified_prediction_service(pred_config)
+        except Exception as e:
+            print(f"[POSTPROCESS] Unified ML predictions error: {e}")
+            predictions_res = None
+            
         # 6. Reports
-        mfg_report, printability_txt, ai_opt_md = generate_reports(
-            validation_res=validation_res,
+        mfg_report, ai_opt_md = generate_reports(
+            validation_res=repaired_validation_res,
             ml_settings=ml_settings,
             material=payload.material,
             pattern=payload.pattern,
-            printer_name=payload.printerName
+            printer_name=payload.printerName,
+            predictions=predictions_res,
+            original_validation_res=validation_res
         )
         
-        # 7. Slicer profiles
+        # 7. Slicer profile (OrcaSlicer only)
         orca = generate_orca_profile(ml_settings, payload.printerName, payload.material)
-        cura = generate_cura_profile(ml_settings, payload.printerName, payload.material)
-        prusa = generate_prusa_profile(ml_settings, payload.printerName, payload.material)
         
-        # 8. Package ZIP
-        project_config = {
-            "parameters": {
-                "dimX": payload.size / 10.0,
-                "dimY": payload.size / 10.0,
-                "dimZ": payload.size / 10.0,
-                "wallThickness": payload.wallThickness,
-                "shellLayers": 2,
-                "edgeRounding": 0.2,
-                "resolution": payload.resolution,
+        # 8. Build project manifest
+        project_manifest = {
+            "manifest_version": "1.0",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "project": {
                 "material": payload.material,
                 "pattern": payload.pattern,
-                "infill": payload.infillDensity,
-                "cellSize": payload.cellSize,
-                "cellThickness": payload.infillThickness,
-                "orientation": payload.orientation
-            }
+                "infill_density_percent": payload.infillDensity,
+                "dimensions_mm": [payload.size, payload.size, payload.size],
+                "wall_thickness_mm": payload.wallThickness,
+                "infill_thickness_mm": payload.infillThickness,
+                "cell_size_mm": payload.cellSize,
+                "orientation": payload.orientation,
+                "resolution": payload.resolution,
+                "printer_name": payload.printerName
+            },
+            "validation": repaired_validation_res,
+            "predictions": {
+                "yield_strength_MPa": predictions_res["strength_MPa"] if predictions_res else 0.0,
+                "max_force_N": predictions_res["max_force_N"] if predictions_res else 0.0,
+                "deformation_mm": 4.2 - (payload.infillDensity * 0.02),
+                "stiffness_N_mm": predictions_res["stiffness_N_mm"] if predictions_res else 0.0,
+                "energy_absorption_J": predictions_res["energy_J"] if predictions_res else 0.0,
+                "estimated_mass_g": predictions_res["mass_g"] if predictions_res else 0.0,
+                "print_time_seconds": predictions_res["print_time_seconds"] if predictions_res else 0.0,
+                "time_breakdown": predictions_res["time_breakdown"] if predictions_res else {},
+                "confidence": predictions_res["confidence"] if predictions_res else 0.5,
+                "model_used": predictions_res["model_used"] if predictions_res else "None"
+            },
+            "slicing_recommendations": ml_settings
         }
+        
+        # 9. Package ZIP
+        debug_mode = os.getenv("DEBUG", "false").lower() == "true"
         zip_bytes = package_manufacturing_zip(
-            original_mesh=original_mesh,
             repaired_mesh=repaired_mesh,
-            manufacturing_report=mfg_report,
-            printability_report=printability_txt,
             ai_optimization_report=ai_opt_md,
             orca_profile=orca,
-            cura_profile=cura,
-            prusa_profile=prusa,
-            ml_settings=ml_settings,
-            project_config=project_config
+            project_manifest=project_manifest,
+            original_mesh=original_mesh if debug_mode else None,
+            debug_mode=debug_mode
         )
         
         # Save ZIP in scratch folder
@@ -848,13 +853,13 @@ def postprocess_manufacturing(payload: AIPostprocessPayload):
             f.write(zip_bytes)
             
         return {
-            "validation": validation_res,
+            "validation": repaired_validation_res,
             "ml_settings": ml_settings,
             "printer_profile": printer_profile,
             "reports": {
                 "manufacturing": mfg_report,
-                "printability": printability_txt,
-                "ai_optimization": ai_opt_md
+                "ai_optimization": ai_opt_md,
+                "project_manifest": project_manifest
             },
             "download_url": "/api/manufacturing/download"
         }
