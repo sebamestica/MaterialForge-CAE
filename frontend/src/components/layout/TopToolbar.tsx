@@ -9,8 +9,6 @@ import {
   Save,
   Download,
   Play,
-  Database,
-  Settings,
   Menu,
   BarChart3,
   Box,
@@ -53,6 +51,7 @@ export default function TopToolbar() {
       toggleRightPanel: state.toggleRightPanel,
       activeTab: state.activeTab,
       workspaceFocus: state.workspaceFocus,
+      compact_header: state.compact_header,
       scanDatasets: state.scanDatasets,
       fetchReport: state.fetchReport,
       fetchSpecimens: state.fetchSpecimens,
@@ -201,183 +200,267 @@ export default function TopToolbar() {
 
   return (
     <div className="w-full bg-white border-b border-slate-200 select-none text-slate-700 print:hidden relative z-50 shadow-xs flex flex-col">
-      {/* LEVEL 1: GLOBAL PROJECT CONTEXT & FILE OPERATIONS */}
-      <div className="w-full h-12 border-b border-slate-250/70 flex items-center justify-between px-4 text-base font-sans">
-        {/* Left: Brand logo & project name */}
-        <div className="flex items-center space-x-3">
-          {/* Toggle Left Panel Button on Mobile */}
-          <button
-            onClick={store.toggleLeftPanel}
-            className="lg:hidden p-1 rounded-md hover:bg-slate-100 text-slate-600 transition-colors focus:outline-none cursor-pointer"
-            title="Parámetros de Diseño"
-          >
-            <Menu className="w-4 h-4" />
-          </button>
+      {store.compact_header ? (
+        <div className="w-full h-[54px] flex items-center justify-between px-4 text-sm font-sans">
+          {/* Left: Brand logo & compact project name */}
+          <div className="flex items-center space-x-3">
+            {/* Toggle Left Panel Button on Mobile */}
+            <button
+              onClick={store.toggleLeftPanel}
+              className="lg:hidden p-1 rounded-md hover:bg-slate-100 text-slate-600 transition-colors focus:outline-none cursor-pointer"
+              title="Parámetros de Diseño"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
 
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 rounded bg-[#1E40AF] flex items-center justify-center text-white shadow-xs">
-              <Box className="w-4 h-4" />
+            <div className="flex items-center space-x-2">
+              <div className="w-7 h-7 rounded bg-[#1E40AF] flex items-center justify-center text-white shadow-xs">
+                <Box className="w-4 h-4" />
+              </div>
+              <span className="text-[#0F172A] font-black text-sm tracking-wider uppercase">
+                MaterialForge
+              </span>
             </div>
-            <span className="text-[#0F172A] font-black text-lg tracking-wider uppercase font-sans">
-              MaterialForge
-            </span>
+
+            <div className="h-3.5 w-px bg-slate-200" />
+
+            <div className="hidden md:flex items-center space-x-1 text-xs">
+              <span className="text-slate-400">Proyecto:</span>
+              <span className="text-slate-800 font-bold">Cubo_v7</span>
+            </div>
           </div>
 
-          <div className="h-3.5 w-px bg-slate-200" />
-
-          <div className="flex items-center space-x-2 text-sm font-sans">
-            <span className="text-slate-400">Proyecto:</span>
-            <span className="text-slate-800 font-black">Cubo_Resistencia_v7</span>
-            {saving ? (
-              <div className="flex items-center space-x-1.5 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-[4px] text-xs text-amber-650 font-bold animate-pulse">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span>Guardando...</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-1.5 bg-emerald-50 border border-emerald-255 px-2 py-0.5 rounded-[4px] text-xs text-emerald-600 font-bold">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-555 animate-pulse" />
-                <span>Guardado</span>
-              </div>
-            )}
+          {/* Center: CAD Workspace Foci Switcher (condensed) */}
+          <div className="flex items-center space-x-0.5 bg-slate-200/50 p-0.5 rounded-lg text-xs font-bold border border-slate-200">
+            {(["diseño", "material", "simulación", "resultados", "fabricación"] as const).map((focus) => (
+              <button
+                key={focus}
+                onClick={() => store.setParam("workspaceFocus", focus)}
+                className={`px-2 py-1 rounded-md transition-all cursor-pointer capitalize font-black ${
+                  store.workspaceFocus === focus
+                    ? "bg-[#1E40AF] text-white shadow-3xs"
+                    : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
+                }`}
+              >
+                {focus.slice(0, 3)}
+              </button>
+            ))}
           </div>
-        </div>
 
-        {/* Right: Administrative & File Commands grouped semantically */}
-        <div className="flex items-center space-x-3.5 font-sans text-sm">
-          {/* Group 1: FILE OPERATIONS */}
-          <div className="flex items-center space-x-1 border-r border-slate-200 pr-3">
-            <button
-              onClick={() => store.resetToDefaults()}
-              className="flex items-center space-x-1 hover:text-[#1E40AF] hover:bg-slate-50 px-2 py-1 rounded transition-all font-bold cursor-pointer"
-              title="Crear nuevo proyecto"
-            >
-              <FilePlus className="w-4 h-4 text-slate-400" />
-              <span>Nuevo</span>
-            </button>
-            <button
-              onClick={handleOpenClick}
-              className="flex items-center space-x-1 hover:text-[#1E40AF] hover:bg-slate-50 px-2 py-1 rounded transition-all font-bold cursor-pointer"
-              title="Abrir proyecto existente (.json, .zip)"
-            >
-              <FolderOpen className="w-4 h-4 text-slate-400" />
-              <span>Abrir</span>
-            </button>
+          {/* Right: Compact operations & Simulate CTA */}
+          <div className="flex items-center space-x-2 text-xs">
+            {/* Quick Actions */}
             <button
               onClick={handleSave}
-              className="flex items-center space-x-1 hover:text-[#1E40AF] hover:bg-slate-50 px-2 py-1 rounded transition-all font-bold cursor-pointer"
-              title="Guardar proyecto"
+              disabled={saving}
+              className="p-1 hover:text-[#1E40AF] transition-colors cursor-pointer rounded hover:bg-slate-50 text-slate-400"
+              title="Guardar proyecto (.ZIP)"
             >
-              <Save className="w-4 h-4 text-slate-400" />
-              <span>Guardar</span>
+              <Save className="w-4 h-4" />
+            </button>
+
+            <div className="h-3.5 w-px bg-slate-200 hidden md:block" />
+
+            {/* Quick Exporters */}
+            <div className="hidden md:flex items-center space-x-1">
+              <button
+                onClick={handleExportStl}
+                disabled={exporting}
+                className="text-slate-655 hover:text-[#1E40AF] font-bold px-2 py-1 rounded transition-all disabled:opacity-50 cursor-pointer uppercase"
+                title="Exportar STL"
+              >
+                STL
+              </button>
+
+              <button
+                onClick={handleExportGcode}
+                className="text-slate-655 hover:text-[#1E40AF] font-bold px-2 py-1 rounded transition-all cursor-pointer uppercase"
+                title="Exportar GCODE"
+              >
+                GCODE
+              </button>
+            </div>
+
+            <div className="h-3.5 w-px bg-slate-200" />
+
+            {/* Simulate button */}
+            <button
+              onClick={() => {
+                store.triggerInference();
+                store.triggerMeshGeneration();
+              }}
+              className="flex items-center space-x-1.5 bg-[#1E40AF] text-white hover:bg-[#1D4ED8] px-3.5 py-1.5 rounded-lg transition-all font-black shadow-xs hover:shadow-sm cursor-pointer text-xs uppercase"
+            >
+              <Play className="w-3.5 h-3.5 fill-white text-white" />
+              <span>Simular</span>
             </button>
           </div>
+        </div>
+      ) : (
+        <>
+          {/* LEVEL 1: GLOBAL PROJECT CONTEXT & FILE OPERATIONS */}
+          <div className="w-full h-12 border-b border-slate-250/70 flex items-center justify-between px-4 text-base font-sans">
+            {/* Left: Brand logo & project name */}
+            <div className="flex items-center space-x-3">
+              {/* Toggle Left Panel Button on Mobile */}
+              <button
+                onClick={store.toggleLeftPanel}
+                className="lg:hidden p-1 rounded-md hover:bg-slate-100 text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                title="Parámetros de Diseño"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
 
-          {/* Group 2: DATABASE & SETTINGS */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => alert("Bases de datos mecánicas válidas en directorio data/ del servidor.")}
-              className="flex items-center space-x-1 hover:text-[#1E40AF] hover:bg-slate-50 px-2.5 py-1 rounded transition-all font-bold cursor-pointer"
-              title="Consultar base de datos de filamentos"
-            >
-              <Database className="w-4 h-4 text-slate-400" />
-              <span>Base de datos</span>
-            </button>
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded bg-[#1E40AF] flex items-center justify-center text-white shadow-xs">
+                  <Box className="w-4 h-4" />
+                </div>
+                <span className="text-[#0F172A] font-black text-lg tracking-wider uppercase font-sans">
+                  MaterialForge
+                </span>
+              </div>
 
-            <button 
-              className="p-1 hover:text-[#1E40AF] transition-colors cursor-pointer rounded hover:bg-slate-50 text-slate-400"
-              title="Preferencias del sistema"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-            
-            <div className="w-6 h-6 rounded-full bg-[#EFF6FF] border border-blue-200 flex items-center justify-center text-xs text-[#1E40AF] font-black hover:border-[#1E40AF] cursor-pointer shadow-3xs">
-              SA
+              <div className="h-3.5 w-px bg-slate-200" />
+
+              <div className="flex items-center space-x-2 text-sm font-sans">
+                <span className="text-slate-400">Proyecto:</span>
+                <span className="text-slate-800 font-black">Cubo_Resistencia_v7</span>
+                {saving ? (
+                  <div className="flex items-center space-x-1.5 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-[4px] text-xs text-amber-650 font-bold animate-pulse">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <span>Guardando...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-1.5 bg-emerald-50 border border-emerald-255 px-2 py-0.5 rounded-[4px] text-xs text-emerald-600 font-bold">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-555 animate-pulse" />
+                    <span>Guardado</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Administrative & File Commands grouped semantically */}
+            <div className="flex items-center space-x-3.5 font-sans text-sm">
+              {/* Group 1: FILE OPERATIONS */}
+              <div className="flex items-center space-x-1 border-r border-slate-200 pr-3">
+                <button
+                  onClick={() => store.resetToDefaults()}
+                  className="flex items-center space-x-1 hover:text-[#1E40AF] hover:bg-slate-50 px-2 py-1 rounded transition-all font-bold cursor-pointer"
+                  title="Crear nuevo proyecto"
+                >
+                  <FilePlus className="w-4 h-4 text-slate-400" />
+                  <span>Nuevo</span>
+                </button>
+                <button
+                  onClick={handleOpenClick}
+                  className="flex items-center space-x-1 hover:text-[#1E40AF] hover:bg-slate-50 px-2 py-1 rounded transition-all font-bold cursor-pointer"
+                  title="Abrir proyecto existente (.json, .zip)"
+                >
+                  <FolderOpen className="w-4 h-4 text-slate-400" />
+                  <span>Abrir</span>
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex items-center space-x-1 hover:text-[#1E40AF] hover:bg-slate-50 px-2 py-1 rounded transition-all font-bold cursor-pointer"
+                  title="Guardar proyecto"
+                >
+                  <Save className="w-4 h-4 text-slate-400" />
+                  <span>Guardar</span>
+                </button>
+              </div>
+
+              {/* Group 2: DATABASE & SETTINGS */}
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 rounded-full bg-[#EFF6FF] border border-blue-200 flex items-center justify-center text-xs text-[#1E40AF] font-black hover:border-[#1E40AF] cursor-pointer shadow-3xs">
+                  SA
+                </div>
+              </div>
+
+              {/* Toggle Right Panel Button on Mobile */}
+              <button
+                onClick={store.toggleRightPanel}
+                className="lg:hidden p-1 rounded-md hover:bg-slate-100 text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                title="Resultados y Métricas"
+              >
+                <BarChart3 className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          {/* Toggle Right Panel Button on Mobile */}
-          <button
-            onClick={store.toggleRightPanel}
-            className="lg:hidden p-1 rounded-md hover:bg-slate-100 text-slate-600 transition-colors focus:outline-none cursor-pointer"
-            title="Resultados y Métricas"
-          >
-            <BarChart3 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+          {/* LEVEL 2: OPERATIONAL WORKSPACE SWITCHERS & ACTION INFERENCE */}
+          <div className="w-full h-14 flex items-center justify-between px-4 bg-slate-50/50 font-sans text-base border-t border-slate-200">
+            {/* Left: Global View switches */}
+            <div className="flex items-center space-x-1 bg-slate-200/50 p-0.5 rounded-lg text-sm font-bold border border-slate-200">
+              <button
+                onClick={() => store.setParam("activeTab", "editor")}
+                className="px-3 py-1.5 rounded-md bg-white text-[#1E40AF] shadow-3xs font-extrabold transition-all cursor-pointer"
+              >
+                Editor CAD
+              </button>
+            </div>
 
-      {/* LEVEL 2: OPERATIONAL WORKSPACE SWITCHERS & ACTION INFERENCE */}
-      <div className="w-full h-14 flex items-center justify-between px-4 bg-slate-50/50 font-sans text-base border-t border-slate-200">
-        {/* Left: Global View switches */}
-        <div className="flex items-center space-x-1 bg-slate-200/50 p-0.5 rounded-lg text-sm font-bold border border-slate-200">
-          <button
-            onClick={() => store.setParam("activeTab", "editor")}
-            className="px-3 py-1.5 rounded-md bg-white text-[#1E40AF] shadow-3xs font-extrabold transition-all cursor-pointer"
-          >
-            Editor CAD
-          </button>
-        </div>
+            {/* Center: CAD Workspace Foci Switcher */}
+            <div className="flex items-center space-x-1 bg-slate-200/50 p-0.5 rounded-lg text-sm font-bold border border-slate-200">
+              {(["diseño", "material", "simulación", "resultados", "fabricación"] as const).map((focus) => (
+                <button
+                  key={focus}
+                  onClick={() => store.setParam("workspaceFocus", focus)}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer capitalize font-black ${
+                    store.workspaceFocus === focus
+                      ? "bg-[#1E40AF] text-white shadow-3xs"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
+                  }`}
+                >
+                  {focus}
+                </button>
+              ))}
+            </div>
 
-        {/* Center: CAD Workspace Foci Switcher */}
-        <div className="flex items-center space-x-1 bg-slate-200/50 p-0.5 rounded-lg text-sm font-bold border border-slate-200">
-          {(["diseño", "material", "simulación", "resultados", "fabricación"] as const).map((focus) => (
-            <button
-              key={focus}
-              onClick={() => store.setParam("workspaceFocus", focus)}
-              className={`px-3 py-1.5 rounded-md transition-all cursor-pointer capitalize font-black ${
-                store.workspaceFocus === focus
-                  ? "bg-[#1E40AF] text-white shadow-3xs"
-                  : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
-              }`}
-            >
-              {focus}
-            </button>
-          ))}
-        </div>
+            {/* Right: Export & Simulate actions */}
+            <div className="flex items-center space-x-3">
+              {/* Exporters Group */}
+              <div className="flex items-center space-x-1.5 border-r border-slate-200 pr-3">
+                <button
+                  onClick={handleExportStl}
+                  disabled={exporting}
+                  className="flex items-center space-x-1 text-slate-600 hover:text-[#1E40AF] hover:bg-white border border-transparent hover:border-slate-200 px-3 py-1.5 rounded transition-all disabled:opacity-50 font-bold cursor-pointer text-sm uppercase"
+                >
+                  <Download className={`w-4 h-4 ${exporting ? "animate-bounce text-[#1E40AF]" : "text-slate-400"}`} />
+                  <span>{exporting ? "Generando..." : "STL"}</span>
+                </button>
 
-        {/* Right: Export & Simulate actions */}
-        <div className="flex items-center space-x-3">
-          {/* Exporters Group */}
-          <div className="flex items-center space-x-1.5 border-r border-slate-200 pr-3">
-            <button
-              onClick={handleExportStl}
-              disabled={exporting}
-              className="flex items-center space-x-1 text-slate-600 hover:text-[#1E40AF] hover:bg-white border border-transparent hover:border-slate-200 px-3 py-1.5 rounded transition-all disabled:opacity-50 font-bold cursor-pointer text-sm uppercase"
-            >
-              <Download className={`w-4 h-4 ${exporting ? "animate-bounce text-[#1E40AF]" : "text-slate-400"}`} />
-              <span>{exporting ? "Generando..." : "STL"}</span>
-            </button>
+                <button
+                  onClick={handleExportGcode}
+                  className="flex items-center space-x-1 text-slate-650 hover:text-[#1E40AF] hover:bg-white border border-transparent hover:border-slate-200 px-3 py-1.5 rounded transition-all font-bold cursor-pointer text-sm uppercase"
+                >
+                  <Download className="w-4 h-4 text-slate-400" />
+                  <span>GCODE</span>
+                </button>
 
-            <button
-              onClick={handleExportGcode}
-              className="flex items-center space-x-1 text-slate-600 hover:text-[#1E40AF] hover:bg-white border border-transparent hover:border-slate-200 px-3 py-1.5 rounded transition-all font-bold cursor-pointer text-sm uppercase"
-            >
-              <Download className="w-4 h-4 text-slate-400" />
-              <span>GCODE</span>
-            </button>
+                <button
+                  onClick={handleExportPdf}
+                  className="flex items-center space-x-1 text-slate-650 hover:text-[#1E40AF] hover:bg-white border border-transparent hover:border-slate-200 px-3 py-1.5 rounded transition-all font-bold cursor-pointer text-sm uppercase"
+                >
+                  <Download className="w-4 h-4 text-slate-400" />
+                  <span>PDF</span>
+                </button>
+              </div>
 
-            <button
-              onClick={handleExportPdf}
-              className="flex items-center space-x-1 text-slate-600 hover:text-[#1E40AF] hover:bg-white border border-transparent hover:border-slate-200 px-3 py-1.5 rounded transition-all font-bold cursor-pointer text-sm uppercase"
-            >
-              <Download className="w-4 h-4 text-slate-400" />
-              <span>PDF</span>
-            </button>
+              {/* Simulate main CTA (GENERATE) */}
+              <button
+                onClick={() => {
+                  store.triggerInference();
+                  store.triggerMeshGeneration();
+                }}
+                className="flex items-center space-x-2 bg-[#1E40AF] text-white hover:bg-[#1D4ED8] px-4.5 py-1.8 rounded-lg transition-all font-black shadow-xs hover:shadow-sm cursor-pointer text-sm uppercase tracking-wider"
+              >
+                <Play className="w-3.5 h-3.5 fill-white text-white" />
+                <span>Simular</span>
+              </button>
+            </div>
           </div>
-
-          {/* Simulate main CTA (GENERATE) */}
-          <button
-            onClick={() => {
-              store.triggerInference();
-              store.triggerMeshGeneration();
-            }}
-            className="flex items-center space-x-2 bg-[#1E40AF] text-white hover:bg-[#1D4ED8] px-4.5 py-1.8 rounded-lg transition-all font-black shadow-xs hover:shadow-sm cursor-pointer text-sm uppercase tracking-wider"
-          >
-            <Play className="w-3.5 h-3.5 fill-white text-white" />
-            <span>Simular</span>
-          </button>
-        </div>
-      </div>
+        </>
+      )}
 
       <input
         type="file"

@@ -25,6 +25,7 @@ export default function Home() {
     rightPanelCollapsed,
     toggleLeftPanel,
     toggleRightPanel,
+    compact_header,
   } = useLabStore(
     useShallow((state) => ({
       fetchDatabaseData: state.fetchDatabaseData,
@@ -34,8 +35,44 @@ export default function Home() {
       rightPanelCollapsed: state.rightPanelCollapsed,
       toggleLeftPanel: state.toggleLeftPanel,
       toggleRightPanel: state.toggleRightPanel,
+      compact_header: state.compact_header,
     }))
   );
+
+  const [leftWidth, setLeftWidth] = useState(300);
+  const [rightWidth, setRightWidth] = useState(300);
+
+  const startResize = (e: React.MouseEvent, side: "left" | "right") => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = side === "left" ? leftWidth : rightWidth;
+
+    const doDrag = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      let newWidth = startWidth;
+      if (side === "left") {
+        newWidth = startWidth + deltaX;
+        if (newWidth < 250) newWidth = 250;
+        if (newWidth > 500) newWidth = 500;
+        setLeftWidth(newWidth);
+        localStorage.setItem("MaterialForge_leftPanelWidth", String(newWidth));
+      } else {
+        newWidth = startWidth - deltaX;
+        if (newWidth < 250) newWidth = 250;
+        if (newWidth > 500) newWidth = 500;
+        setRightWidth(newWidth);
+        localStorage.setItem("MaterialForge_rightPanelWidth", String(newWidth));
+      }
+    };
+
+    const stopDrag = () => {
+      document.removeEventListener("mousemove", doDrag);
+      document.removeEventListener("mouseup", stopDrag);
+    };
+
+    document.addEventListener("mousemove", doDrag);
+    document.addEventListener("mouseup", stopDrag);
+  };
 
   // Run initial data queries on load and clean up legacy service workers
   useEffect(() => {
@@ -50,6 +87,32 @@ export default function Home() {
           window.location.reload();
         }
       });
+    }
+
+    if (typeof window !== "undefined") {
+      const leftCol = localStorage.getItem("MaterialForge_leftPanelCollapsed");
+      const rightCol = localStorage.getItem("MaterialForge_rightPanelCollapsed");
+      const advMode = localStorage.getItem("MaterialForge_ui_advanced_mode");
+      const storedLeftWidth = localStorage.getItem("MaterialForge_leftPanelWidth");
+      const storedRightWidth = localStorage.getItem("MaterialForge_rightPanelWidth");
+      const historyStr = localStorage.getItem("MaterialForge_designHistory");
+      
+      const updateState: any = {};
+      if (leftCol !== null) updateState.leftPanelCollapsed = leftCol === "true";
+      if (rightCol !== null) updateState.rightPanelCollapsed = rightCol === "true";
+      if (advMode !== null) updateState.ui_advanced_mode = advMode === "true";
+      if (historyStr !== null) {
+        try {
+          updateState.designHistory = JSON.parse(historyStr);
+        } catch (e) {
+          console.error("Failed to parse designHistory", e);
+        }
+      }
+      
+      useLabStore.setState(updateState);
+      
+      if (storedLeftWidth) setLeftWidth(Number(storedLeftWidth));
+      if (storedRightWidth) setRightWidth(Number(storedRightWidth));
     }
 
     fetchDatabaseData();
@@ -84,25 +147,45 @@ export default function Home() {
 
           {/* Left Side: Parametric Inputs */}
           <div
+            style={{ width: leftPanelCollapsed ? 0 : `${leftWidth}px` }}
             className={`transition-all duration-300 ease-in-out shrink-0 border-slate-200 bg-white overflow-hidden
               lg:relative lg:translate-x-0 lg:top-0 lg:h-full
-              fixed top-[92px] bottom-0 left-0 z-40 w-[300px] h-[calc(100vh-92px)] border-r shadow-lg lg:shadow-none
-              ${leftPanelCollapsed ? "lg:w-0 lg:border-r-0 -translate-x-full" : "lg:w-[300px] translate-x-0"}`}
+              fixed bottom-0 left-0 z-40 border-r shadow-lg lg:shadow-none
+              ${compact_header ? "top-[54px] h-[calc(100vh-54px)]" : "top-[92px] h-[calc(100vh-92px)]"}
+              ${leftPanelCollapsed ? "-translate-x-full lg:border-r-0" : "translate-x-0"}`}
           >
             <LeftPanel />
           </div>
+
+          {/* Left Resizer handle */}
+          {!leftPanelCollapsed && (
+            <div
+              className="hidden lg:block w-1 cursor-col-resize hover:bg-[#1E40AF]/40 transition-colors bg-slate-200 shrink-0 z-50 h-full"
+              onMouseDown={(e) => startResize(e, "left")}
+            />
+          )}
 
           {/* Center Canvas: Interactive R3F Viewport */}
           <div className="flex-1 h-full p-0 relative flex flex-col min-w-0 bg-[#FAFBFC]">
             <BaseViewport />
           </div>
 
+          {/* Right Resizer handle */}
+          {!rightPanelCollapsed && (
+            <div
+              className="hidden lg:block w-1 cursor-col-resize hover:bg-[#1E40AF]/40 transition-colors bg-slate-200 shrink-0 z-50 h-full"
+              onMouseDown={(e) => startResize(e, "right")}
+            />
+          )}
+
           {/* Right Side: Scientific Graphs & Recommendations */}
           <div
+            style={{ width: rightPanelCollapsed ? 0 : `${rightWidth}px` }}
             className={`transition-all duration-300 ease-in-out shrink-0 border-slate-200 bg-white overflow-hidden
               lg:relative lg:translate-x-0 lg:top-0 lg:h-full
-              fixed top-[92px] bottom-0 right-0 z-40 w-[300px] h-[calc(100vh-92px)] border-l shadow-lg lg:shadow-none
-              ${rightPanelCollapsed ? "lg:w-0 lg:border-l-0 translate-x-full" : "lg:w-[300px] translate-x-0"}`}
+              fixed bottom-0 right-0 z-40 border-l shadow-lg lg:shadow-none
+              ${compact_header ? "top-[54px] h-[calc(100vh-54px)]" : "top-[92px] h-[calc(100vh-92px)]"}
+              ${rightPanelCollapsed ? "translate-x-full lg:border-l-0" : "translate-x-0"}`}
           >
             <RightPanel />
           </div>

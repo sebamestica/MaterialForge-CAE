@@ -96,33 +96,46 @@ export default function LeftPanel() {
       triggerInference: state.triggerInference,
       toggleLeftPanel: state.toggleLeftPanel,
       workspaceFocus: state.workspaceFocus,
+      ui_advanced_mode: state.ui_advanced_mode,
+      appliedForce: state.appliedForce,
+      isSimulating: state.isSimulating,
+      runDynamicSimulation: state.runDynamicSimulation,
     }))
   );
-  const [openSections, setOpenSections] = useState({
-    geom: true,
-    mat: true,
-    infill: true,
-    print: false,
-    sim: false,
-  });
+
+  const [activeModule, setActiveModule] = useState<"geom" | "mat" | "infill" | "print" | "sim">("geom");
 
   React.useEffect(() => {
     if (store.workspaceFocus === "diseño") {
-      setOpenSections({ geom: true, mat: false, infill: true, print: false, sim: false });
+      setActiveModule("geom");
     } else if (store.workspaceFocus === "material") {
-      setOpenSections({ geom: false, mat: true, infill: false, print: false, sim: false });
+      setActiveModule("mat");
     } else if (store.workspaceFocus === "simulación") {
-      setOpenSections({ geom: false, mat: false, infill: false, print: false, sim: true });
+      setActiveModule("sim");
     } else if (store.workspaceFocus === "fabricación") {
-      setOpenSections({ geom: false, mat: false, infill: false, print: true, sim: false });
+      if (store.ui_advanced_mode) {
+        setActiveModule("print");
+      } else {
+        setActiveModule("geom");
+      }
     }
   }, [store.workspaceFocus]);
 
-  const toggleSection = (section: keyof typeof openSections) => {
-    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
-  };
+  React.useEffect(() => {
+    if (!store.ui_advanced_mode && activeModule === "print") {
+      setActiveModule("geom");
+    }
+  }, [store.ui_advanced_mode, activeModule]);
 
   const matInfo = store.materials[store.material] || store.materials.PLA || MATERIAL_DATA.PLA;
+
+  const modules = [
+    { id: "geom", label: "Geometría", icon: Box, value: `${store.dimX.toFixed(1)}x${store.dimY.toFixed(1)}x${store.dimZ.toFixed(1)} cm` },
+    { id: "mat", label: "Material", icon: HardHat, value: store.material },
+    { id: "infill", label: "Estructura", icon: Layers, value: `${store.pattern} (${store.infill}%)` },
+    ...(store.ui_advanced_mode ? [{ id: "print", label: "Laminado", icon: Printer, value: `${store.layerHeight.toFixed(2)}mm` }] : []),
+    { id: "sim", label: "Simulación", icon: Activity, value: `${store.appliedForce} N` },
+  ] as const;
 
   return (
     <div className="w-full h-full bg-white flex flex-col overflow-y-auto select-none text-slate-850 scrollbar-thin">
@@ -145,55 +158,65 @@ export default function LeftPanel() {
       </div>
 
       <div className="p-3 space-y-4 flex-1 overflow-y-auto">
-        {/* ACTIVE CONFIGURATION SUMMARY CARD */}
-        <div className="bg-[#EFF6FF] border border-blue-200 rounded-lg p-3 text-sm font-sans text-[#1E3A8A] shadow-2xs shrink-0">
-          <div className="font-extrabold uppercase tracking-wider text-[#1E40AF] mb-2 flex items-center gap-1.5 text-sm">
-            <Box className="w-4 h-4 text-[#1E40AF]" />
-            Configuración Activa
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 font-semibold text-sm text-slate-650">
-            <div className="flex justify-between border-b border-blue-200/50 pb-0.5">
-              <span>Tamaño:</span>
-              <span className="font-bold text-[#1E3A8A] font-mono">{store.dimX}x{store.dimY}x{store.dimZ} cm</span>
-            </div>
-            <div className="flex justify-between border-b border-blue-200/50 pb-0.5">
-              <span>Material:</span>
-              <span className="font-bold text-[#1E3A8A]">{store.material}</span>
-            </div>
-            <div className="flex justify-between border-b border-blue-200/50 pb-0.5">
-              <span>Patrón:</span>
-              <span className="font-bold text-[#1E3A8A] capitalize">{store.pattern}</span>
-            </div>
-            <div className="flex justify-between border-b border-blue-200/50 pb-0.5">
-              <span>Infill:</span>
-              <span className="font-bold text-[#1E3A8A] font-mono">{store.infill}%</span>
-            </div>
-          </div>
+        {/* MODE TOGGLE SWITCH */}
+        <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-sans text-slate-700 shadow-3xs shrink-0">
+          <span className="font-bold text-slate-800">Modo Avanzado (CAD/CAE)</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={store.ui_advanced_mode}
+              onChange={(e) => {
+                const nextVal = e.target.checked;
+                store.setParam("ui_advanced_mode", nextVal);
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("MaterialForge_ui_advanced_mode", String(nextVal));
+                }
+              }}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1E40AF]"></div>
+          </label>
         </div>
 
-        {/* SECTION 1: GEOMETRÍA */}
-        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
-          <button
-            onClick={() => toggleSection("geom")}
-            className="w-full p-3 flex items-center justify-between text-left text-sm font-black uppercase tracking-wider text-slate-800 border-b border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer bg-white"
-          >
-            <span className="flex items-center space-x-2">
-              <Box className="w-4.5 h-4.5 text-slate-400 shrink-0" />
-              <span>1. GEOMETRÍA</span>
-            </span>
-            <div className="flex items-center space-x-2">
-              {!openSections.geom && (
-                <span className="text-sm text-slate-450 normal-case font-normal font-sans font-mono">
-                  {store.dimX.toFixed(0)}x{store.dimY.toFixed(0)}x{store.dimZ.toFixed(0)}cm • {store.wallThickness}mm
+        {/* MODULES BUBBLES / NAV SELECTOR */}
+        <div className="grid grid-cols-2 gap-2.5 shrink-0">
+          {modules.map((m) => {
+            const Icon = m.icon;
+            const isActive = activeModule === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => setActiveModule(m.id as any)}
+                className={`flex flex-col items-center justify-between p-3 rounded-xl border text-center transition-all cursor-pointer select-none ${
+                  isActive
+                    ? "bg-[#EFF6FF] border-[#1E40AF] shadow-xs ring-1 ring-[#1E40AF]/20"
+                    : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 shadow-3xs"
+                }`}
+              >
+                <div className="flex items-center justify-center w-8 h-8 rounded-full mb-1">
+                  <Icon className={`w-5 h-5 ${isActive ? "text-[#1E40AF]" : "text-slate-400"}`} />
+                </div>
+                <span className={`text-[11px] font-black uppercase tracking-wider block ${isActive ? "text-[#1E40AF]" : "text-slate-500"}`}>
+                  {m.label}
                 </span>
-              )}
-              {openSections.geom ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
-            </div>
-          </button>
+                <span className={`text-[10px] font-mono mt-0.5 block truncate max-w-full font-bold ${isActive ? "text-[#1E3A8A]" : "text-slate-455"}`}>
+                  {m.value}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-          {openSections.geom && (
-            <div className="p-3 space-y-4 border-t border-slate-200 bg-white font-sans text-sm">
-              {/* Dimensions X, Y, Z */}
+        {/* ACTIVE INSPECTOR CONTAINER */}
+        <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs p-3.5 space-y-4">
+          <div className="text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2 flex items-center space-x-2">
+            <span>Configurando:</span>
+            <span className="text-[#1E40AF]">{modules.find((m) => m.id === activeModule)?.label}</span>
+          </div>
+
+          {/* GEOMETRY MODULE CONTROLS */}
+          {activeModule === "geom" && (
+            <div className="space-y-4 font-sans text-sm">
               <div className="space-y-1.5">
                 <span className="text-slate-500 font-bold text-sm cursor-help" title="Dimensiones físicas del bloque en centímetros. Límites permitidos: 1.0 cm a 15.0 cm. Afecta el volumen final y la masa total.">Dimensiones del Bounding Box ⓘ</span>
                 <div className="grid grid-cols-3 gap-2.5">
@@ -227,7 +250,6 @@ export default function LeftPanel() {
                 </div>
               </div>
 
-              {/* wallThickness */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Espesor en milímetros de la carcasa exterior sólida (shell). Límites: 0.4 mm a 10.0 mm.">
                   <span className="font-semibold text-slate-500">Espesor de Pared (Shell) ⓘ</span>
@@ -248,94 +270,75 @@ export default function LeftPanel() {
                 </div>
               </div>
 
-              {/* shellLayers */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Número de capas sólidas superiores e inferiores.">
-                  <span className="font-semibold text-slate-500">Capas de Carcasa ⓘ</span>
-                  <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.shellLayers}</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={5}
-                  step={1}
-                  value={store.shellLayers}
-                  onChange={(e) => store.setParam("shellLayers", parseInt(e.target.value))}
-                  className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF]"
-                />
-                <div className="flex justify-between text-xs text-slate-400 font-mono">
-                  <span>0 capas</span>
-                  <span>5 capas</span>
-                </div>
-              </div>
+              {store.ui_advanced_mode && (
+                <>
+                  <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                    <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Número de capas sólidas superiores e inferiores.">
+                      <span className="font-semibold text-slate-500">Capas de Carcasa ⓘ</span>
+                      <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.shellLayers}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={5}
+                      step={1}
+                      value={store.shellLayers}
+                      onChange={(e) => store.setParam("shellLayers", parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF]"
+                    />
+                    <div className="flex justify-between text-xs text-slate-400 font-mono">
+                      <span>0 capas</span>
+                      <span>5 capas</span>
+                    </div>
+                  </div>
 
-              {/* edgeRounding */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Radio en milímetros del redondeado en las aristas verticales.">
-                  <span className="font-semibold text-slate-500">Redondeo de Bordes ⓘ</span>
-                  <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.edgeRounding.toFixed(2)} mm</span>
-                </div>
-                <input
-                  type="range"
-                  min={0.0}
-                  max={2.0}
-                  step={0.05}
-                  value={store.edgeRounding}
-                  onChange={(e) => store.setParam("edgeRounding", parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF]"
-                />
-                <div className="flex justify-between text-xs text-slate-400 font-mono">
-                  <span>0.0 mm (Recto)</span>
-                  <span>2.0 mm (Máx)</span>
-                </div>
-              </div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Radio en milímetros del redondeado en las aristas verticales.">
+                      <span className="font-semibold text-slate-500">Redondeo de Bordes ⓘ</span>
+                      <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.edgeRounding.toFixed(2)} mm</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0.0}
+                      max={2.0}
+                      step={0.05}
+                      value={store.edgeRounding}
+                      onChange={(e) => store.setParam("edgeRounding", parseFloat(e.target.value))}
+                      className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF]"
+                    />
+                    <div className="flex justify-between text-xs text-slate-400 font-mono">
+                      <span>0.0 mm (Recto)</span>
+                      <span>2.0 mm (Máx)</span>
+                    </div>
+                  </div>
 
-              {/* resolution */}
-              <div className="flex justify-between items-center cursor-help font-semibold text-slate-500 pt-2 border-t border-slate-200" title="Resolución superficial de malla. Baja es óptima para rendimiento, Alta para exportar.">
-                <span>Resolución Superficial ⓘ</span>
-                <select
-                  value={store.resolution}
-                  onChange={(e) => store.setParam("resolution", e.target.value)}
-                  className="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-850 text-sm font-bold outline-none focus:border-[#1E40AF] cursor-pointer"
-                >
-                  <option value="Baja">Draft (Baja)</option>
-                  <option value="Media">Balanced (Media)</option>
-                  <option value="Alta">High (Alta)</option>
-                  <option value="Ultra">Ultra (Industrial)</option>
-                </select>
-              </div>
+                  <div className="flex justify-between items-center cursor-help font-semibold text-slate-500 pt-3 border-t border-slate-100" title="Resolución superficial de malla. Baja es óptima para rendimiento, Alta para exportar.">
+                    <span>Resolución Superficial ⓘ</span>
+                    <select
+                      value={store.resolution}
+                      onChange={(e) => store.setParam("resolution", e.target.value)}
+                      className="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-855 text-sm font-bold outline-none focus:border-[#1E40AF] cursor-pointer"
+                    >
+                      <option value="Baja">Draft (Baja)</option>
+                      <option value="Media">Balanced (Media)</option>
+                      <option value="Alta">High (Alta)</option>
+                      <option value="Ultra">Ultra (Industrial)</option>
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
           )}
-        </div>
 
-        {/* SECTION 2: MATERIAL */}
-        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
-          <button
-            onClick={() => toggleSection("mat")}
-            className="w-full p-3 flex items-center justify-between text-left text-sm font-black uppercase tracking-wider text-slate-800 border-b border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer bg-white"
-          >
-            <span className="flex items-center space-x-2">
-              <HardHat className="w-4.5 h-4.5 text-slate-400 shrink-0" />
-              <span>2. MATERIAL</span>
-            </span>
-            <div className="flex items-center space-x-2">
-              {!openSections.mat && (
-                <span className="text-sm text-slate-455 normal-case font-normal font-sans">
-                  {store.material} • {matInfo.modulus}
-                </span>
-              )}
-              {openSections.mat ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
-            </div>
-          </button>
-
-          {openSections.mat && (
-            <div className="p-3 space-y-4 border-t border-slate-200 bg-white font-sans text-sm">
+          {/* MATERIAL MODULE CONTROLS */}
+          {activeModule === "mat" && (
+            <div className="space-y-4 font-sans text-sm">
               <div className="flex justify-between items-center cursor-help font-semibold text-slate-500" title="Tipo de termoplástico utilizado para la predicción de esfuerzo físico.">
                 <span>Material del Filamento ⓘ</span>
                 <select
                   value={store.material}
                   onChange={(e) => store.setParam("material", e.target.value)}
-                  className="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-850 text-sm font-bold outline-none w-36 focus:border-[#1E40AF] cursor-pointer"
+                  className="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-855 text-sm font-bold outline-none w-36 focus:border-[#1E40AF] cursor-pointer"
                 >
                   {Object.entries(store.materials).map(([key, mat]) => (
                     <option key={key} value={key}>{mat.name}</option>
@@ -343,22 +346,21 @@ export default function LeftPanel() {
                 </select>
               </div>
 
-              {/* Specs Table */}
-              <div className="bg-slate-50/70 p-3 rounded-lg border border-slate-200 shadow-3xs space-y-2.5">
+              <div className="bg-slate-50/70 p-3 rounded-lg border border-slate-150 space-y-2.5">
                 <div className="flex justify-between text-sm border-b border-slate-200/50 pb-2">
-                  <span className="text-slate-550">Densidad base:</span>
+                  <span className="text-slate-500">Densidad base:</span>
                   <span className="text-slate-800 font-bold font-mono">{matInfo.density}</span>
                 </div>
                 <div className="flex justify-between text-sm border-b border-slate-200/50 pb-2">
-                  <span className="text-slate-550">Módulo elástico:</span>
+                  <span className="text-slate-500">Módulo elástico:</span>
                   <span className="text-slate-800 font-bold font-mono">{matInfo.modulus}</span>
                 </div>
                 <div className="flex justify-between text-sm border-b border-slate-200/50 pb-2">
-                  <span className="text-slate-550">Resistencia Tracción:</span>
+                  <span className="text-slate-500">Resistencia Tracción:</span>
                   <span className="text-slate-800 font-bold font-mono">{matInfo.tensileStrength}</span>
                 </div>
                 <div className="flex justify-between text-sm border-b border-slate-200/50 pb-2">
-                  <span className="text-slate-550">Fusor térmico:</span>
+                  <span className="text-slate-500">Fusor térmico:</span>
                   <span className="text-slate-800 font-bold font-mono">{matInfo.printTemp}</span>
                 </div>
                 <div className="flex justify-between text-sm pt-1 items-center">
@@ -370,36 +372,16 @@ export default function LeftPanel() {
               </div>
             </div>
           )}
-        </div>
 
-        {/* SECTION 3: ESTRUCTURA INTERNA */}
-        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
-          <button
-            onClick={() => toggleSection("infill")}
-            className="w-full p-3 flex items-center justify-between text-left text-sm font-black uppercase tracking-wider text-slate-800 border-b border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer bg-white"
-          >
-            <span className="flex items-center space-x-2">
-              <Layers className="w-4.5 h-4.5 text-slate-400 shrink-0" />
-              <span>3. ESTRUCTURA INTERNA</span>
-            </span>
-            <div className="flex items-center space-x-2">
-              {!openSections.infill && (
-                <span className="text-sm text-slate-455 normal-case font-normal font-sans">
-                  {store.pattern} • {store.infill}%
-                </span>
-              )}
-              {openSections.infill ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
-            </div>
-          </button>
-
-          {openSections.infill && (
-            <div className="p-3 space-y-4 border-t border-slate-200 bg-white font-sans text-sm">
+          {/* INFILL MODULE CONTROLS */}
+          {activeModule === "infill" && (
+            <div className="space-y-4 font-sans text-sm">
               <div className="flex justify-between items-center cursor-help font-semibold text-slate-500" title="Patrón geométrico interno usado para la celosía.">
                 <span>Patrón de Retícula ⓘ</span>
                 <select
                   value={store.pattern}
                   onChange={(e) => store.setParam("pattern", e.target.value)}
-                  className="bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-850 text-sm font-bold outline-none w-36 focus:border-[#1E40AF] cursor-pointer"
+                  className="bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-855 text-sm font-bold outline-none w-36 focus:border-[#1E40AF] cursor-pointer"
                 >
                   {Object.entries(store.patterns).map(([key, label]) => (
                     <option key={key} value={key}>{label}</option>
@@ -407,8 +389,7 @@ export default function LeftPanel() {
                 </select>
               </div>
 
-              {/* Preview with parameters */}
-              <div className="flex items-center space-x-3 bg-slate-50/70 p-3 rounded-lg border border-slate-200 shadow-3xs">
+              <div className="flex items-center space-x-3 bg-slate-50/70 p-3 rounded-lg border border-slate-150">
                 <PatternPreview pattern={store.pattern} />
                 <div className="flex-1 space-y-2">
                   <div className="space-y-1.5">
@@ -429,7 +410,6 @@ export default function LeftPanel() {
                 </div>
               </div>
 
-              {/* Cell Size */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Tamaño en milímetros de la celda unitaria de retícula.">
                   <span className="font-semibold text-slate-500">Densidad/Tamaño Celda ⓘ</span>
@@ -450,87 +430,49 @@ export default function LeftPanel() {
                 </div>
               </div>
 
-              {/* Cell Thickness */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Grosor en milímetros de los struts internos del infill.">
-                  <span className="font-semibold text-slate-500">Espesor de Celda ⓘ</span>
-                  <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.cellThickness.toFixed(2)} mm</span>
-                </div>
-                <input
-                  type="range"
-                  min={0.1}
-                  max={2.0}
-                  step={0.05}
-                  value={store.cellThickness}
-                  onChange={(e) => store.setParam("cellThickness", parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF]"
-                />
-                <div className="flex justify-between text-xs text-slate-400 font-mono">
-                  <span>0.1 mm</span>
-                  <span>2.0 mm</span>
-                </div>
-              </div>
+              {store.ui_advanced_mode && (
+                <>
+                  <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                    <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Grosor en milímetros de los struts internos del infill.">
+                      <span className="font-semibold text-slate-500">Espesor de Celda ⓘ</span>
+                      <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.cellThickness.toFixed(2)} mm</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={2.0}
+                      step={0.05}
+                      value={store.cellThickness}
+                      onChange={(e) => store.setParam("cellThickness", parseFloat(e.target.value))}
+                      className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF]"
+                    />
+                    <div className="flex justify-between text-xs text-slate-400 font-mono">
+                      <span>0.1 mm</span>
+                      <span>2.0 mm</span>
+                    </div>
+                  </div>
 
-              {/* Orientation */}
-              <div className="flex justify-between items-center cursor-help font-semibold text-slate-500 border-t border-slate-200 pt-3.5" title="Orientación del estiramiento del infill celular.">
-                <span>Orientación Celular ⓘ</span>
-                <select
-                  value={store.orientation}
-                  onChange={(e) => store.setParam("orientation", e.target.value)}
-                  className="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-850 text-sm font-bold outline-none w-36 focus:border-[#1E40AF] cursor-pointer"
-                >
-                  <option value="Isotrópica">Isotrópica</option>
-                  <option value="Anisotrópica X">Aniso X</option>
-                  <option value="Anisotrópica Y">Aniso Y</option>
-                  <option value="Anisotrópica Z">Aniso Z</option>
-                </select>
-              </div>
-
-              {/* Generate button */}
-              <div className="flex space-x-2 pt-3.5 border-t border-slate-200">
-                <button
-                  onClick={() => store.triggerMeshGeneration()}
-                  className="flex-1 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white font-black uppercase text-sm py-2.5 rounded-lg flex items-center justify-center space-x-1.5 shadow-sm transition-all cursor-pointer"
-                >
-                  <span>Generar Malla 3D</span>
-                </button>
-                <button
-                  onClick={() => {
-                    store.triggerMeshGeneration();
-                    store.triggerInference();
-                  }}
-                  className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-550 hover:text-slate-800 p-2.5 rounded-lg transition-all shadow-sm cursor-pointer"
-                  title="Calcular simulación"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                </button>
-              </div>
+                  <div className="flex justify-between items-center cursor-help font-semibold text-slate-500 border-t border-slate-100 pt-3" title="Orientación del estiramiento del infill celular.">
+                    <span>Orientación Celular ⓘ</span>
+                    <select
+                      value={store.orientation}
+                      onChange={(e) => store.setParam("orientation", e.target.value)}
+                      className="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-855 text-sm font-bold outline-none w-36 focus:border-[#1E40AF] cursor-pointer"
+                    >
+                      <option value="Isotrópica">Isotrópica</option>
+                      <option value="Anisotrópica X">Aniso X</option>
+                      <option value="Anisotrópica Y">Aniso Y</option>
+                      <option value="Anisotrópica Z">Aniso Z</option>
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
           )}
-        </div>
 
-        {/* SECTION 4: PARÁMETROS DE IMPRESIÓN */}
-        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
-          <button
-            onClick={() => toggleSection("print")}
-            className="w-full p-3 flex items-center justify-between text-left text-sm font-black uppercase tracking-wider text-slate-800 border-b border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer bg-white"
-          >
-            <span className="flex items-center space-x-2">
-              <Printer className="w-4.5 h-4.5 text-slate-400 shrink-0" />
-              <span>4. PARÁMETROS DE LAMINADO</span>
-            </span>
-            <div className="flex items-center space-x-2">
-              {!openSections.print && (
-                <span className="text-sm text-slate-450 normal-case font-normal font-sans font-mono">
-                  {store.layerHeight.toFixed(2)}mm • {store.printSpeed}mm/s
-                </span>
-              )}
-              {openSections.print ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
-            </div>
-          </button>
-          {openSections.print && (
-            <div className="p-3 space-y-4 border-t border-slate-200 bg-white font-sans text-sm">
-              {/* layerHeight */}
+          {/* SLICING MODULE CONTROLS */}
+          {activeModule === "print" && store.ui_advanced_mode && (
+            <div className="space-y-4 font-sans text-sm">
               <div className="space-y-1.5">
                 <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Altura de capa del extrusor.">
                   <span className="font-semibold text-slate-500">Altura de Capa (Resolución Z) ⓘ</span>
@@ -551,7 +493,6 @@ export default function LeftPanel() {
                 </div>
               </div>
 
-              {/* printSpeed */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Velocidad del extrusor en el plano XY.">
                   <span className="font-semibold text-slate-500">Velocidad de Impresión ⓘ</span>
@@ -572,113 +513,70 @@ export default function LeftPanel() {
                 </div>
               </div>
 
-              <div className="text-xs text-slate-400 pt-2 border-t border-slate-200 font-sans font-bold uppercase tracking-wider flex justify-between">
+              <div className="text-xs text-slate-400 pt-2 border-t border-slate-100 font-sans font-bold uppercase tracking-wider flex justify-between">
                 <span>Modo de Relleno:</span>
                 <span className="text-slate-800 normal-case font-bold">Lattice SDF</span>
               </div>
             </div>
           )}
-        </div>
 
-        {/* SECTION 5: CONTROLES DE SIMULACIÓN */}
-        <SimulationControls
-          open={openSections.sim}
-          onToggle={() => toggleSection("sim")}
-        />
-      </div>
-    </div>
-  );
-}
+          {/* SIMULATION MODULE CONTROLS */}
+          {activeModule === "sim" && (
+            <div className="space-y-4 font-sans text-sm">
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-slate-500 text-sm font-semibold">Fuerza aplicada</span>
+                  <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.appliedForce} N</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1000}
+                  step={10}
+                  value={store.appliedForce}
+                  disabled={store.isSimulating}
+                  onChange={(e) => store.setParam("appliedForce", parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF] disabled:opacity-50"
+                />
+                <div className="flex justify-between text-xs text-slate-400 font-mono">
+                  <span>0 N (Descarga)</span>
+                  <span>1000 N (Límite)</span>
+                </div>
+              </div>
 
-interface SimulationControlsProps {
-  open: boolean;
-  onToggle: () => void;
-}
+              <button
+                onClick={() => store.runDynamicSimulation()}
+                disabled={store.isSimulating}
+                className="w-full bg-[#1E40AF] text-white hover:bg-[#1D4ED8] font-black py-2.5 rounded-lg transition-all text-sm uppercase flex items-center justify-center space-x-2 shadow-sm disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none cursor-pointer"
+              >
+                {store.isSimulating ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Simulando...</span>
+                  </>
+                ) : (
+                  <span>Presión Dinámica</span>
+                )}
+              </button>
 
-function SimulationControls({ open, onToggle }: SimulationControlsProps) {
-  const { appliedForce, isSimulating, setParam, runDynamicSimulation } = useLabStore(
-    useShallow((state) => ({
-      appliedForce: state.appliedForce,
-      isSimulating: state.isSimulating,
-      setParam: state.setParam,
-      runDynamicSimulation: state.runDynamicSimulation,
-    }))
-  );
-
-  return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
-      <button
-        onClick={onToggle}
-        className="w-full p-3 flex items-center justify-between text-left text-sm font-black uppercase tracking-wider text-slate-800 border-b border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer bg-white"
-      >
-        <span className="flex items-center space-x-2">
-          <Activity className="w-4.5 h-4.5 text-slate-400 shrink-0" />
-          <span>5. SIMULACIÓN & CARGA</span>
-        </span>
-        <div className="flex items-center space-x-2">
-          {!open && (
-            <span className="text-sm text-slate-455 normal-case font-normal font-sans font-mono">
-              Fuerza: {appliedForce}N
-            </span>
+              <div className="text-sm text-slate-500 space-y-1.5 pt-3 border-t border-slate-100 font-sans font-medium">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-450">Velocidad de carga:</span>
+                  <span className="text-slate-800 font-bold font-mono">1.5 mm/min</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-450">Eje de compresión:</span>
+                  <span className="text-slate-800 font-bold font-mono">Z-Axis (Y-WebGL)</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-455">Método predictivo:</span>
+                  <span className="text-slate-800 font-bold font-mono">Gradient Boosting ML</span>
+                </div>
+              </div>
+            </div>
           )}
-          {open ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
         </div>
-      </button>
-
-      {open && (
-        <div className="p-3 space-y-4 border-t border-slate-200 bg-white">
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-baseline">
-              <span className="text-slate-500 text-sm font-semibold">Fuerza aplicada</span>
-              <span className="text-[#1E40AF] font-bold font-mono text-sm">{appliedForce} N</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={1000}
-              step={10}
-              value={appliedForce}
-              disabled={isSimulating}
-              onChange={(e) => setParam("appliedForce", parseInt(e.target.value))}
-              className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF] disabled:opacity-50"
-            />
-            <div className="flex justify-between text-xs text-slate-400 font-mono">
-              <span>0 N (Descarga)</span>
-              <span>1000 N (Límite)</span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => runDynamicSimulation()}
-            disabled={isSimulating}
-            className="w-full bg-[#1E40AF] text-white hover:bg-[#1D4ED8] font-black py-2.5 rounded-lg transition-all text-sm uppercase flex items-center justify-center space-x-2 shadow-sm disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none cursor-pointer"
-          >
-            {isSimulating ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Simulando...</span>
-              </>
-            ) : (
-              <span>Presión Dinámica</span>
-            )}
-          </button>
-
-          <div className="text-sm text-slate-500 space-y-1.5 pt-3.5 border-t border-slate-200 font-sans font-medium">
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-450">Velocidad de carga:</span>
-              <span className="text-slate-800 font-bold font-mono">1.5 mm/min</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-450">Eje de compresión:</span>
-              <span className="text-slate-800 font-bold font-mono">Z-Axis (Y-WebGL)</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-450">Método predictivo:</span>
-              <span className="text-slate-800 font-bold font-mono">Gradient Boosting ML</span>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

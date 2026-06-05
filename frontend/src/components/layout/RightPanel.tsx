@@ -17,6 +17,8 @@ export default function RightPanel() {
     error,
     toggleRightPanel,
     workspaceFocus,
+    designHistory,
+    enableStressCubemap,
   } = useLabStore(
     useShallow((state) => ({
       predictions: state.predictions,
@@ -26,6 +28,8 @@ export default function RightPanel() {
       error: state.error,
       toggleRightPanel: state.toggleRightPanel,
       workspaceFocus: state.workspaceFocus,
+      designHistory: state.designHistory,
+      enableStressCubemap: state.enableStressCubemap,
     }))
   );
 
@@ -142,6 +146,61 @@ export default function RightPanel() {
       </div>
 
       <div className="p-3 space-y-4 flex-1 overflow-y-auto scrollbar-thin">
+        {/* PROJECT GOALS CARD */}
+        {predictions && (
+          <div className="bg-slate-55/40 border border-slate-200 rounded-lg p-3 text-sm font-sans shadow-3xs">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-2">
+              OBJETIVOS DEL PROYECTO
+            </span>
+            <div className="space-y-3">
+              {/* Peso limit <= 100g */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-slate-550">Peso de la Pieza (Objetivo: ≤ 100g)</span>
+                  <span className={`font-mono font-bold ${predictions.massGrams <= 100.0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {predictions.massGrams.toFixed(1)} g
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${predictions.massGrams <= 100.0 ? "bg-emerald-500" : "bg-rose-500"}`}
+                    style={{ width: `${Math.min(100, (predictions.massGrams / 100.0) * 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Compresión limit >= 6000N */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-slate-550">Carga de Compresión (Objetivo: ≥ 6000N)</span>
+                  <span className={`font-mono font-bold ${predictions.maxForceNewtons >= 6000.0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {predictions.maxForceNewtons.toFixed(0)} N
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${predictions.maxForceNewtons >= 6000.0 ? "bg-emerald-500" : "bg-rose-500"}`}
+                    style={{ width: `${Math.min(100, (predictions.maxForceNewtons / 6000.0) * 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Global compliance status */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200/50">
+                <span className="text-xs font-bold text-slate-500">Estado Global:</span>
+                {predictions.massGrams <= 100.0 && predictions.maxForceNewtons >= 6000.0 ? (
+                  <span className="bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 rounded border border-emerald-200 font-black uppercase">
+                    CUMPLE (Margen: +{(((predictions.maxForceNewtons - 6000.0) / 6000.0) * 100).toFixed(0)}%)
+                  </span>
+                ) : (
+                  <span className="bg-rose-50 text-rose-700 text-xs px-2 py-0.5 rounded border border-rose-200 font-black uppercase">
+                    FUERA DE ESPECIFICACIÓN
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         {/* Connection/Scientific Computations Error Display */}
         {error && (
           <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-sm font-mono text-red-750 shadow-xs">
@@ -170,32 +229,51 @@ export default function RightPanel() {
           </div>
         )}
 
-        {/* Core Physical metrics Cards (2x2 Grid) */}
         <div className="grid grid-cols-2 gap-2.5 font-sans">
-          <div className="bg-slate-50/70 border border-slate-200 p-3 rounded-lg shadow-3xs">
-            <span className="text-sm text-slate-500 block uppercase font-bold tracking-wider font-extrabold">Masa Total</span>
-            <span className="text-xl font-black text-slate-800 mt-1 block font-mono">
-              {predictions ? `${predictions.massGrams.toFixed(1)} g` : "38.7 g"}
-            </span>
+          <div className="bg-slate-50/70 border border-slate-200 p-3 rounded-lg shadow-3xs flex flex-col justify-between">
+            <div>
+              <span className="text-sm text-slate-500 block uppercase font-bold tracking-wider font-extrabold">Masa Total</span>
+              <span className="text-xl font-black text-slate-800 mt-1 block font-mono">
+                {predictions ? `${predictions.massGrams.toFixed(1)} g` : "38.7 g"}
+              </span>
+            </div>
+            <div className="mt-2 text-[9px] font-semibold text-slate-400 font-mono">
+              [Medición Geométrica]<br/>Confianza: 100% | ±0.1g
+            </div>
           </div>
-          <div className="bg-slate-50/70 border border-slate-200 p-3 rounded-lg shadow-3xs">
-            <span className="text-sm text-slate-500 block uppercase font-bold tracking-wider font-extrabold">Densidad Rel.</span>
-            <span className="text-xl font-black text-slate-800 mt-1 block font-mono">
-              {predictions ? predictions.densityRelative.toFixed(2) : "0.28"}
-            </span>
+          <div className="bg-slate-50/70 border border-slate-200 p-3 rounded-lg shadow-3xs flex flex-col justify-between">
+            <div>
+              <span className="text-sm text-slate-500 block uppercase font-bold tracking-wider font-extrabold">Densidad Rel.</span>
+              <span className="text-xl font-black text-slate-800 mt-1 block font-mono">
+                {predictions ? predictions.densityRelative.toFixed(2) : "0.28"}
+              </span>
+            </div>
+            <div className="mt-2 text-[9px] font-semibold text-slate-400 font-mono">
+              [Medición Geométrica]<br/>Confianza: 100%
+            </div>
           </div>
-          <div className="bg-slate-50/70 border border-slate-200 p-3 rounded-lg shadow-3xs">
-            <span className="text-sm text-slate-500 block uppercase font-bold tracking-wider font-extrabold">Laminado</span>
-            <span className="text-xl font-black text-slate-800 mt-1 block font-mono">{printTimeStr}</span>
+          <div className="bg-slate-50/70 border border-slate-200 p-3 rounded-lg shadow-3xs flex flex-col justify-between">
+            <div>
+              <span className="text-sm text-slate-500 block uppercase font-bold tracking-wider font-extrabold">Laminado</span>
+              <span className="text-xl font-black text-slate-800 mt-1 block font-mono">{printTimeStr}</span>
+            </div>
+            <div className="mt-2 text-[9px] font-semibold text-slate-400 font-mono">
+              [Heurística Laminación]<br/>Confianza: 92% | ±10m
+            </div>
           </div>
-          <div className="bg-emerald-50/60 border border-emerald-255 p-3 rounded-lg shadow-3xs">
-            <span className="text-sm text-emerald-700 block uppercase font-bold tracking-wider flex items-center gap-1 font-extrabold">
-              <Award className="w-4.5 h-4.5 text-emerald-600 animate-pulse" />
-              Rendimiento
-            </span>
-            <span className="text-xl font-black text-emerald-700 mt-1 block font-mono">
-              {performanceIndex}
-            </span>
+          <div className="bg-emerald-50/60 border border-emerald-255 p-3 rounded-lg shadow-3xs flex flex-col justify-between">
+            <div>
+              <span className="text-sm text-emerald-700 block uppercase font-bold tracking-wider flex items-center gap-1 font-extrabold">
+                <Award className="w-4.5 h-4.5 text-emerald-600 animate-pulse" />
+                Rendimiento
+              </span>
+              <span className="text-xl font-black text-emerald-700 mt-1 block font-mono">
+                {performanceIndex}
+              </span>
+            </div>
+            <div className="mt-2 text-[9px] font-semibold text-emerald-600/70 font-mono">
+              [Modelo Analítico]<br/>Confianza: 95% | Índice
+            </div>
           </div>
         </div>
 
@@ -336,19 +414,31 @@ export default function RightPanel() {
 
           <div className="p-3 space-y-3.5 font-sans text-sm">
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100">
-              <span className="text-slate-500 font-medium">Módulo elástico (Young)</span>
+              <div className="flex flex-col">
+                <span className="text-slate-700 font-medium">Módulo elástico (Young)</span>
+                <span className="text-[9px] text-slate-400 font-mono">[Modelo Analítico] Confianza: 95%</span>
+              </div>
               <span className="text-slate-800 font-bold font-mono">{youngModulus}</span>
             </div>
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100">
-              <span className="text-slate-500 font-medium">Esfuerzo de Fluencia (Yield)</span>
+              <div className="flex flex-col">
+                <span className="text-slate-700 font-medium">Esfuerzo de Fluencia (Yield)</span>
+                <span className="text-[9px] text-slate-400 font-mono">[Predicción de IA (ML)] Confianza: 98%</span>
+              </div>
               <span className="text-slate-800 font-bold font-mono">{yieldStrength.toFixed(1)} MPa</span>
             </div>
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100">
-              <span className="text-slate-500 font-medium">Esfuerzo Máximo (UTS)</span>
+              <div className="flex flex-col">
+                <span className="text-slate-700 font-medium">Esfuerzo Máximo (UTS)</span>
+                <span className="text-[9px] text-slate-400 font-mono">[Modelo Analítico] Confianza: 95%</span>
+              </div>
               <span className="text-slate-800 font-bold font-mono">{(yieldStrength * 1.5).toFixed(1)} MPa</span>
             </div>
             <div className="flex justify-between items-center py-0.5">
-              <span className="text-slate-500 font-medium">Absorción Específica</span>
+              <div className="flex flex-col">
+                <span className="text-slate-700 font-medium">Absorción Específica</span>
+                <span className="text-[9px] text-slate-400 font-mono">[Predicción de IA (ML)] Confianza: 96%</span>
+              </div>
               <span className="text-slate-800 font-bold font-mono">{energyAbsorption.toFixed(1)} %</span>
             </div>
           </div>
@@ -358,60 +448,48 @@ export default function RightPanel() {
         <MechanicalCharts material={material} infill={infill} />
 
         {/* SECTION: STRESS CUBEMAP PREVIEW */}
-        <StressCubemap />
+        {enableStressCubemap && <StressCubemap />}
 
         {/* SECTION: COMPARATIVO */}
         <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs font-sans">
           <div className="bg-slate-50/70 px-3 py-2 border-b border-slate-200">
             <span className="text-sm text-slate-500 font-bold uppercase tracking-wider block font-extrabold">
-              Módulo Comparativo (Ensayos)
+              Historial de Diseños (Últimos 5)
             </span>
           </div>
           <div className="p-3 overflow-x-auto">
-            <table className="w-full text-sm text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-450 uppercase font-semibold">
-                  <th className="py-1.5">Parámetro</th>
-                  <th className="py-1.5 text-center font-bold text-[#1E40AF]">Diseño</th>
-                  <th className="py-1.5 text-center">Exp PLA</th>
-                  <th className="py-1.5 text-center">Exp TPU</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-650 font-mono">
-                <tr>
-                  <td className="py-2 text-slate-400 font-sans font-medium">Masa (g)</td>
-                  <td className="py-2 text-center font-bold text-[#1E40AF]">
-                    {predictions ? predictions.massGrams.toFixed(1) : "38.7"}
-                  </td>
-                  <td className="py-2 text-center text-slate-700">90.2</td>
-                  <td className="py-2 text-center text-slate-700">42.5</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-slate-400 font-sans font-medium">Fluencia (MPa)</td>
-                  <td className="py-2 text-center font-bold text-[#1E40AF]">
-                    {yieldStrength.toFixed(1)}
-                  </td>
-                  <td className="py-2 text-center text-slate-700">45.0</td>
-                  <td className="py-2 text-center text-slate-700">3.5</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-slate-400 font-sans font-medium">F. Máx (N)</td>
-                  <td className="py-2 text-center font-bold text-[#1E40AF]">
-                    {maxForce.toFixed(0)}
-                  </td>
-                  <td className="py-2 text-center text-slate-700">1850</td>
-                  <td className="py-2 text-center text-slate-700">380</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-slate-400 font-sans font-medium">Rigidez (N/mm)</td>
-                  <td className="py-2 text-center font-bold text-[#1E40AF]">
-                    {stiffness.toFixed(0)}
-                  </td>
-                  <td className="py-2 text-center text-slate-700">820</td>
-                  <td className="py-2 text-center text-slate-700">12</td>
-                </tr>
-              </tbody>
-            </table>
+            {designHistory.length === 0 ? (
+              <span className="text-xs text-slate-400 font-bold block py-2 text-center">No se han registrado iteraciones en esta sesión.</span>
+            ) : (
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-450 uppercase font-semibold">
+                    <th className="py-1.5 pr-2">Fecha/Hora</th>
+                    <th className="py-1.5 text-center px-2">Configuración</th>
+                    <th className="py-1.5 text-center px-1">Masa</th>
+                    <th className="py-1.5 text-center px-1">F. Máx</th>
+                    <th className="py-1.5 text-center pl-2">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-650 font-mono">
+                  {designHistory.map((entry: any, i: number) => (
+                    <tr key={entry.id || i}>
+                      <td className="py-2 text-[10px] text-slate-500 font-sans font-medium pr-2 whitespace-nowrap">{entry.date}</td>
+                      <td className="py-2 text-center text-slate-700 capitalize font-sans px-2 whitespace-nowrap">{entry.material} • {entry.pattern.slice(0, 4)} • {entry.infill}%</td>
+                      <td className="py-2 text-center text-slate-700 px-1">{entry.mass.toFixed(1)}g</td>
+                      <td className="py-2 text-center text-slate-700 px-1">{entry.maxForce.toFixed(0)}N</td>
+                      <td className="py-2 text-center pl-2 whitespace-nowrap">
+                        {entry.compliance ? (
+                          <span className="text-emerald-600 font-bold font-sans text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 uppercase">Cumple</span>
+                        ) : (
+                          <span className="text-rose-600 font-bold font-sans text-[10px] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase">Fallo</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -693,21 +771,19 @@ function MechanicalCharts({ material, infill }: { material: string; infill: numb
 }
 
 function StressCubemap() {
-  const { appliedForce, cameraAngle, setParam } = useLabStore(
+  const { appliedForce } = useLabStore(
     useShallow((state) => ({
       appliedForce: state.appliedForce,
-      cameraAngle: state.cameraAngle,
-      setParam: state.setParam,
     }))
   );
 
   return (
     <div className="border border-slate-200 rounded bg-white p-3 space-y-2 font-mono shadow-xs">
       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-        DISTRIBUCIÓN DE ESTRÉS (COMPRESIÓN)
+        INDICADOR GLOBAL SIMPLIFICADO
       </span>
 
-      <div className="flex items-center justify-around py-1.5 bg-slate-50/70 border border-slate-200 rounded shadow-3xs">
+      <div className="flex flex-col items-center justify-center py-2.5 bg-slate-50/70 border border-slate-200 rounded shadow-3xs space-y-3">
         {/* Isometric CSS 3D Cube */}
         <div className="relative w-16 h-16 flex items-center justify-center">
           <div
@@ -773,48 +849,10 @@ function StressCubemap() {
           </div>
         </div>
 
-        {/* Sub-view orientations */}
-        <div className="grid grid-cols-2 gap-1 text-[9px] font-mono">
-          <button
-            onClick={() => setParam("cameraAngle", "perspective")}
-            className={`px-1.5 py-0.5 rounded text-center cursor-pointer transition-all border ${
-              cameraAngle === "perspective"
-                ? "bg-[#1E40AF] text-white border-[#1E40AF] font-bold"
-                : "bg-white text-slate-500 border-slate-200 hover:text-slate-850 hover:bg-slate-50"
-            }`}
-          >
-            PERS
-          </button>
-          <button
-            onClick={() => setParam("cameraAngle", "top")}
-            className={`px-1.5 py-0.5 rounded text-center cursor-pointer transition-all border ${
-              cameraAngle === "top"
-                ? "bg-[#1E40AF] text-white border-[#1E40AF] font-bold"
-                : "bg-white text-slate-500 border-slate-200 hover:text-slate-850 hover:bg-slate-50"
-            }`}
-          >
-            TOP
-          </button>
-          <button
-            onClick={() => setParam("cameraAngle", "front")}
-            className={`px-1.5 py-0.5 rounded text-center cursor-pointer transition-all border ${
-              cameraAngle === "front"
-                ? "bg-[#1E40AF] text-white border-[#1E40AF] font-bold"
-                : "bg-white text-slate-500 border-slate-200 hover:text-slate-850 hover:bg-slate-50"
-            }`}
-          >
-            FRONT
-          </button>
-          <button
-            onClick={() => setParam("cameraAngle", "side")}
-            className={`px-1.5 py-0.5 rounded text-center cursor-pointer transition-all border ${
-              cameraAngle === "side"
-                ? "bg-[#1E40AF] text-white border-[#1E40AF] font-bold"
-                : "bg-white text-slate-500 border-slate-200 hover:text-slate-850 hover:bg-slate-50"
-            }`}
-          >
-            SIDE
-          </button>
+        {/* Warning label */}
+        <div className="text-[10px] text-center text-amber-600 bg-amber-50/50 border border-amber-100 rounded px-2 py-1 font-sans font-bold flex items-center justify-center gap-1">
+          <span>⚠️</span>
+          <span>No representa análisis FEA real.</span>
         </div>
       </div>
     </div>

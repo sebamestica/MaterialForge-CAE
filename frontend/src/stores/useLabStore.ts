@@ -144,6 +144,11 @@ interface LabState {
   isScanning: boolean;
   optimizationRecommendations: any[];
 
+  ui_advanced_mode: boolean;
+  enableStressCubemap: boolean;
+  compact_header: boolean;
+  designHistory: any[];
+
   // Setters & Actions
   setParam: <K extends keyof LabState>(key: K, value: LabState[K]) => void;
   triggerInference: () => void;
@@ -268,8 +273,25 @@ export const useLabStore = create<LabState>((set, get) => ({
   mfgPrinterProfile: null,
   mfgReports: null,
 
-  toggleLeftPanel: () => set((state) => ({ leftPanelCollapsed: !state.leftPanelCollapsed })),
-  toggleRightPanel: () => set((state) => ({ rightPanelCollapsed: !state.rightPanelCollapsed })),
+  ui_advanced_mode: false,
+  enableStressCubemap: true,
+  compact_header: false,
+  designHistory: [],
+
+  toggleLeftPanel: () => set((state) => {
+    const nextVal = !state.leftPanelCollapsed;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("MaterialForge_leftPanelCollapsed", String(nextVal));
+    }
+    return { leftPanelCollapsed: nextVal };
+  }),
+  toggleRightPanel: () => set((state) => {
+    const nextVal = !state.rightPanelCollapsed;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("MaterialForge_rightPanelCollapsed", String(nextVal));
+    }
+    return { rightPanelCollapsed: nextVal };
+  }),
 
   setParam: (key, value) => {
     const prevMode = get().viewportMode;
@@ -278,15 +300,15 @@ export const useLabStore = create<LabState>((set, get) => ({
     if (key === "workspaceFocus") {
       const focus = value as string;
       if (focus === "diseño") {
-        set({ viewportMode: "solid", leftPanelCollapsed: false, rightPanelCollapsed: false, showBuildPlate: false });
+        set({ viewportMode: "solid", showBuildPlate: false });
       } else if (focus === "material") {
-        set({ viewportMode: "solid", leftPanelCollapsed: false, rightPanelCollapsed: false, showBuildPlate: false });
+        set({ viewportMode: "solid", showBuildPlate: false });
       } else if (focus === "simulación") {
-        set({ viewportMode: "heatmap", leftPanelCollapsed: false, rightPanelCollapsed: false, showBuildPlate: false });
+        set({ viewportMode: "heatmap", showBuildPlate: false });
       } else if (focus === "resultados") {
-        set({ leftPanelCollapsed: true, rightPanelCollapsed: false });
+        // Do not alter layout collapse state when switching focus
       } else if (focus === "fabricación") {
-        set({ viewportMode: "slicer", leftPanelCollapsed: false, rightPanelCollapsed: false, showBuildPlate: true });
+        set({ viewportMode: "slicer", showBuildPlate: true });
       }
     }
 
@@ -406,6 +428,25 @@ export const useLabStore = create<LabState>((set, get) => ({
           };
 
           set({ predictions, loadingPredictions: false, error: null });
+          const mass = predictions.massGrams;
+          const force = predictions.maxForceNewtons;
+          const meetsGoals = mass <= 100.0 && force >= 6000.0;
+          const newEntry = {
+            id: `DH-${Date.now()}`,
+            date: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) + " " + new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
+            material: state.material,
+            pattern: state.pattern,
+            infill: state.infill,
+            mass: mass,
+            yieldStrength: predictions.yieldStrengthMpa,
+            maxForce: force,
+            compliance: meetsGoals
+          };
+          const updatedHistory = [newEntry, ...get().designHistory].slice(0, 5);
+          set({ designHistory: updatedHistory });
+          if (typeof window !== "undefined") {
+            localStorage.setItem("MaterialForge_designHistory", JSON.stringify(updatedHistory));
+          }
         } else {
           const errData = await res.json().catch(() => ({}));
           set({ 
