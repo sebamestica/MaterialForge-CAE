@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import trimesh
 import os
+from pathlib import Path
 
-OUTPUT_DIR = r"c:\dev\PLA_3dPrinter_RESISTENCE\BLOQUE_PLA_MAX_RESISTENCIA_50MM"
+OUTPUT_DIR = Path(__file__).parent.parent.parent / "data" / "BLOQUE_PLA_MAX_RESISTENCIA_50MM"
 STL_PATH = os.path.join(OUTPUT_DIR, "modelo_final.stl")
 
 # Load mesh

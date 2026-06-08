@@ -8,7 +8,7 @@ from pathlib import Path
 # Paths
 MODEL_PATH = Path(__file__).parent.parent / "model_pipeline" / "artifacts" / "trained_models" / "GradientBoostingRegressor_deployment_ready.pkl"
 DATASET_PATH = Path(__file__).parent.parent / "specimen_linkage" / "data" / "linked_dataset" / "high_confidence_dataset.csv"
-OUTPUT_DIR = Path(__file__).parent.parent.parent / "BLOQUE_PLA_MAX_RESISTENCIA_50MM"
+OUTPUT_DIR = Path(__file__).parent.parent.parent / "data" / "BLOQUE_PLA_MAX_RESISTENCIA_50MM"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

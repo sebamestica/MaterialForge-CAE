@@ -12,7 +12,7 @@ from pathlib import Path
 # --- CONFIGURATION ---
 MODEL_PATH = Path(__file__).parent.parent / "model_pipeline" / "artifacts" / "trained_models" / "GradientBoostingRegressor_deployment_ready.pkl"
 TPU_DATA_PATH = Path(__file__).parent / "tpu_performance.csv"
-OUTPUT_DIR = Path(__file__).parent.parent.parent / "CUBO_TPU_MAX_ABSORCION_ENERGIA_50MM"
+OUTPUT_DIR = Path(__file__).parent.parent.parent / "data" / "CUBO_TPU_MAX_ABSORCION_ENERGIA_50MM"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # TPU Constants

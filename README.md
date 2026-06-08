@@ -46,8 +46,10 @@ El proyecto está estructurado como una plataforma CAD/CAE de nivel industrial m
 │   │    │    └── rag/                   # Sistema de Ingesta Vectorial y RAG
 │   │    │
 │   │    └── app/                        # Next.js Pages Router
-│
-├── data/                                # Base de datos y datasets en formato CSV
+├── data/                                # Base de datos, datasets y mallas de especímenes
+│   ├── BLOQUE_PLA_MAX_RESISTENCIA_50MM/ # Resultados de optimización PLA (mallas STL, CSV)
+│   ├── CUBO_TPU_MAX_ABSORCION_ENERGIA_50MM/ # Resultados de optimización TPU (mallas STL/OBJ, CSV)
+│   └── ...                              # Otros conjuntos de datos y perfiles de material
 └── .venv/                               # Entorno virtual de Python
 ```
 

@@ -3,8 +3,9 @@ import numpy as np
 from skimage import measure
 import trimesh
 import os
+from pathlib import Path
 
-OUTPUT_DIR = r"c:\dev\PLA_3dPrinter_RESISTENCE\BLOQUE_PLA_MAX_RESISTENCIA_50MM"
+OUTPUT_DIR = Path(__file__).parent.parent.parent / "data" / "BLOQUE_PLA_MAX_RESISTENCIA_50MM"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Parameters

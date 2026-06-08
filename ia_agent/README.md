@@ -1,58 +1,82 @@
-# MaterialForge AI Copilot Agent (`ia_agent`)
+# Motor de Copiloto de IA (`ia_agent`)
 
-Este directorio contiene la lógica del **Copiloto Científico de IA** para MaterialForge, encapsulado e independiente para su fácil exportación y uso en otros entornos.
-
-El agente está diseñado para interactuar con modelos de lenguaje locales a través de **Ollama**, sirviendo como asistente técnico experto en ingeniería de materiales, diseño en impresión 3D FDM y optimización estructural.
-
-## Características Clave
-1. **Detección Automática de Modelos Locales:** Interroga la API de Ollama para seleccionar el mejor modelo de codificación/razonamiento disponible (ej. `qwen2.5-coder:3b`, `llama3.2:3b`, `gemma3`, etc.).
-2. **Contexto Experimental Real:** Lee y formatea el archivo `unified_materials_database.csv` del directorio `data/` del proyecto para basar sus sugerencias en ensayos mecánicos reales (fuerza máxima, deformación, módulo de Young, etc.).
-3. **Validación de Restricciones Físicas Obligatorias:** El prompt del sistema fuerza al agente a validar y recordar los límites del proyecto:
-   - **Dimensiones:** Máximo 5.0 x 5.0 x 5.0 cm (125 cm³).
-   - **Masa total:** Máximo 100 gramos.
-   - **Libertad de formas:** Cubo, Esfera, Cilindro, Cono, Toro, Pirámide y Prisma Hexagonal.
-4. **Respuestas con Recomendación Estructurada (JSON):** Al sugerir mejoras paramétricas, el agente anexa al final de su respuesta un bloque JSON estándar. Este bloque es interpretado automáticamente por el cliente frontend de MaterialForge para aplicar los parámetros al editor interactivo con un solo clic.
+Este directorio contiene la arquitectura del **Copiloto Científico de IA (MaterialForge Copilot)**. Es un agente conversacional y de razonamiento físico diseñado para ejecutarse localmente con **Ollama** u otros motores de inferencia. Actúa como asesor experto en ciencia de materiales (PLA, TPU), diseño aditivo en impresión 3D FDM y optimización topológica.
 
 ---
 
-## Requisitos de Sistema
-- **Python 3.10+**
-- **Ollama** ejecutándose localmente (`http://localhost:11434`) con algún modelo instalado, por ejemplo:
-  ```bash
-  ollama run qwen2.5-coder:3b
-  # o bien:
-  ollama run llama3.2
-  ```
+## 🏗️ Arquitectura del Agente de IA
 
-### Dependencias Python
-El módulo depende de:
-```text
-fastapi
-pydantic
-pandas
+El módulo está estructurado como un pipeline modular de Procesamiento de Lenguaje Natural (NLP) e inferencia física:
+
+```mermaid
+graph TD
+    User([Usuario / Frontend]) -->|1. Consulta Chat| Router[router.py / intent_router.py]
+    Router -->|2. Identificar Intención| ModelSel[model_selector.py]
+    ModelSel -->|3. Seleccionar Modelo Local| Ollama[ollama_client.py]
+    Router -->|4. Construir Contexto| Context[context_builder.py / context_broker.py]
+    Context -->|Cargar Datos| Database[(data/ unified_materials_database.csv)]
+    Router -->|5. Compilar System Prompt| Prompt[prompt_builder.py]
+    Prompt -->|Añadir Directrices Físicas| Ollama
+    Ollama -->|6. Generar Respuesta Streaming| Parser[response_parser.py]
+    Parser -->|7. Validar Geometría y Masa| Validators[validators.py]
+    Validators -->|8. Formatear JSON de Control| User
 ```
 
 ---
 
-## Estructura del Módulo
+## 📁 Estructura del Framework del Agente
 
-- `copilot.py`: Implementación del payload de Pydantic, cargador de datos experimentales, prompt del sistema con directrices físicas e invocación streaming a Ollama.
-- `__init__.py`: Inicializador del paquete de Python.
+El framework se compone de los siguientes elementos clave:
+
+### Componentes de Inferencia y API:
+*   `copilot.py`: Punto de entrada HTTP y orquestador del flujo conversacional asíncrono.
+*   `ollama_client.py`: Cliente de bajo nivel para interactuar con la API local de Ollama (`http://localhost:11434`), con soporte de streaming NDJSON.
+*   `model_selector.py`: Lógica inteligente para detectar y priorizar modelos locales (ej. `qwen2.5-coder:3b`, `llama3.2:3b`, `gemma:2b`).
+*   `schemas.py`: Modelos de validación e intercambio de datos basados en `pydantic` (ej. `CopilotChatPayload`).
+
+### Componentes de Lógica Conversacional y RAG:
+*   `router.py` / `intent_router.py`: Enrutador central que decide si el prompt del usuario requiere una consulta bibliográfica (RAG), optimización matemática, o una respuesta conversacional general.
+*   `context_builder.py` / `context_broker.py`: Creadores de contexto enriquecido. Leen la base de datos de probetas reales y ensamblan el historial del chat.
+*   `prompt_builder.py`: Compilador del *System Prompt*, inyectando las directrices de ingeniería obligatorias y el formato de salida estructurado.
+*   `response_parser.py`: Parser en tiempo real de la respuesta del modelo, que separa el texto explicativo de las recomendaciones estructuradas en formato JSON.
+
+### Componentes de Reglas de Ingeniería:
+*   `validators.py`: Filtros de validación que verifican que las recomendaciones de la IA se adhieran a los límites físicos del proyecto (volumen máximo de $125\text{ cm}^3$, peso bajo $100\text{ g}$, formas permitidas y parámetros de pared realistas).
 
 ---
 
-## Ejemplo de Integración en FastAPI
+## ⚙️ Directrices Físicas Custodiadas
 
-Puedes importar y usar la lógica del agente directamente en tus rutas HTTP de la siguiente manera:
+El agente está configurado para no violar los límites físicos del equipo de impresión y del estudio:
+1.  **Límite de Tamaño**: Piezas restringidas a un cubo envolvente de máximo $5.0 \times 5.0 \times 5.0\text{ cm}$.
+2.  **Límite de Peso**: Masa teórica calculada inferior a $100\text{ gramos}$.
+3.  **Librería Geométrica**: Geometrías limitadas a formas analizables (Cubo, Esfera, Cilindro, Cono, Toro, Pirámide, Prisma Hexagonal).
+4.  **Generación de JSON**: Las recomendaciones paramétricas se traducen a un formato JSON estándar que el frontend puede aplicar al canvas 3D con un solo clic.
+
+---
+
+## 🚀 Requisitos e Integración
+
+### 1. Levantar Ollama Localmente
+Asegúrate de tener un modelo instalado y corriendo en tu máquina:
+```bash
+ollama run qwen2.5-coder:3b
+```
+
+### 2. Uso en Endpoints FastAPI
+El framework se puede acoplar fácilmente en un endpoint HTTP asíncrono:
 
 ```python
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from ia_agent.copilot import CopilotChatPayload, run_copilot_stream
 
 app = FastAPI()
 
 @app.post("/api/copilot/chat")
 async def chat_endpoint(payload: CopilotChatPayload):
-    # Retorna un StreamingResponse con formato ndjson
-    return run_copilot_stream(payload)
+    return StreamingResponse(
+        run_copilot_stream(payload), 
+        media_type="application/x-ndjson"
+    )
 ```
