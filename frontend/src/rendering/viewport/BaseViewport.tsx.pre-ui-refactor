@@ -1,0 +1,489 @@
+"use client";
+
+import React, { useMemo, useEffect, useRef } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
+import { OrbitControls, Html } from "@react-three/drei";
+import { useLabStore } from "@/stores/useLabStore";
+import { useShallow } from "zustand/react/shallow";
+import { TpmsPipeline, SolidsPipeline, PipelineProps } from "@/rendering/pipelines";
+
+
+// Controller to position camera based on Right Panel buttons
+function CameraController() {
+  const { camera } = useThree();
+  const cameraAngle = useLabStore((state) => state.cameraAngle);
+
+  useEffect(() => {
+    if (cameraAngle === "perspective") {
+      camera.position.set(60, 60, 80);
+    } else if (cameraAngle === "top") {
+      camera.position.set(0, 110, 0);
+    } else if (cameraAngle === "front") {
+      camera.position.set(0, 0, 110);
+    } else if (cameraAngle === "side") {
+      camera.position.set(110, 0, 0);
+    }
+    camera.lookAt(0, 0, 0);
+  }, [cameraAngle, camera]);
+
+  return null;
+}
+
+// Coordinate axes and bounding box dimension lines
+interface DimensionLinesProps {
+  size: number; // in mm
+}
+
+function DimensionLines({ size }: DimensionLinesProps) {
+  const sizeCm = (size / 10).toFixed(2);
+  const half = size / 2;
+
+  // Memoize geometry coordinate buffers to prevent inline reallocation in the rendering loop
+  const xPositions = useMemo(() => new Float32Array([-half, -half - 5, half + 5, half, -half - 5, half + 5]), [half]);
+  const zPositions = useMemo(() => new Float32Array([-half - 5, -half - 5, -half, -half - 5, -half - 5, half]), [half]);
+  const yPositions = useMemo(() => new Float32Array([-half - 5, -half, half + 5, -half - 5, half, half + 5]), [half]);
+
+  return (
+    <group>
+      {/* Outer Bounding Box (Wireframe guide) */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[size + 1, size + 1, size + 1]} />
+        <meshBasicMaterial
+          color="#94a3b8"
+          wireframe
+          transparent
+          opacity={0.3}
+        />
+      </mesh>
+
+      {/* Axis Guide Lines */}
+      {/* X Line (Width, Red) */}
+      <line>
+        <bufferGeometry attach="geometry">
+          <float32BufferAttribute
+            attach="attributes-position"
+            args={[xPositions, 3]}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color="#ef4444" linewidth={1} />
+      </line>
+      <Html
+        position={[0, -half - 12, half + 5]}
+        center
+        className="pointer-events-none select-none font-mono text-xs font-black text-[#ef4444] bg-white/95 border border-slate-200 px-2 py-0.5 rounded shadow-2xs"
+      >
+        {`${sizeCm} cm`}
+      </Html>
+
+      {/* Z Line (Depth, Blue) */}
+      <line>
+        <bufferGeometry attach="geometry">
+          <float32BufferAttribute
+            attach="attributes-position"
+            args={[zPositions, 3]}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color="#3b82f6" linewidth={1} />
+      </line>
+      <Html
+        position={[-half - 5, -half - 12, 0]}
+        center
+        className="pointer-events-none select-none font-mono text-xs font-black text-[#3b82f6] bg-white/95 border border-slate-200 px-2 py-0.5 rounded shadow-2xs"
+      >
+        {`${sizeCm} cm`}
+      </Html>
+
+      {/* Y Line (Height, Green) */}
+      <line>
+        <bufferGeometry attach="geometry">
+          <float32BufferAttribute
+            attach="attributes-position"
+            args={[yPositions, 3]}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color="#22c55e" linewidth={1} />
+      </line>
+      <Html
+        position={[-half - 12, 0, half + 5]}
+        center
+        className="pointer-events-none select-none font-mono text-xs font-black text-[#22c55e] bg-white/95 border border-slate-200 px-2 py-0.5 rounded shadow-2xs"
+      >
+        {`${sizeCm} cm`}
+      </Html>
+    </group>
+  );
+}
+
+
+function RenderPipelineDispatcher(props: PipelineProps) {
+  // If it's a solid fallback bounding box, render as Solid. Otherwise, render as TPMS lattice.
+  if (props.vertices.length === 8 && props.faces.length === 12) {
+    return <SolidsPipeline {...props} />;
+  }
+  return <TpmsPipeline {...props} />;
+}
+
+interface PrinterProfile {
+  name: string;
+  build_volume?: {
+    x?: number;
+    y?: number;
+    z?: number;
+  };
+}
+
+// Interactive Build Plate component representing the machine bed boundaries and grid
+function BuildPlate({ printerName, printerProfiles, size }: { printerName: string; printerProfiles: PrinterProfile[]; size: number }) {
+  const profile = printerProfiles.find(p => p.name === printerName);
+  const width = profile?.build_volume?.x || 220.0;
+  const depth = profile?.build_volume?.y || 220.0;
+  const height = profile?.build_volume?.z || 240.0;
+
+  return (
+    <group position={[0, -size / 2 - 0.1, 0]}>
+      {/* Rejilla de la camilla */}
+      <gridHelper args={[width, 20, "#1E40AF", "#cbd5e1"]} />
+      
+      {/* Límites de la cama y volumen traslúcido de la cámara de impresión */}
+      <mesh position={[0, height / 2, 0]}>
+        <boxGeometry args={[width, height, depth]} />
+        <meshBasicMaterial
+          color="#1E40AF"
+          wireframe
+          transparent
+          opacity={0.05}
+        />
+      </mesh>
+      
+      {/* Indicador de Origen Máquina (Front-Left en camas Creality) */}
+      <mesh position={[-width / 2, 0.2, depth / 2]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[3, 3, 0.5, 32]} />
+        <meshBasicMaterial color="#ef4444" />
+      </mesh>
+      <Html position={[-width / 2, 6, depth / 2]} center>
+        <div className="pointer-events-none select-none font-mono text-[7px] font-black text-[#ef4444] uppercase tracking-widest bg-white/90 px-1.5 py-0.5 rounded border border-red-200">
+          Origen
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+function PerformanceHUD({ vertices, faces, resolution }: { vertices: number[]; faces: number[]; resolution: string }) {
+  const fpsRef = useRef<HTMLSpanElement>(null);
+  
+  useEffect(() => {
+    let lastTime = performance.now();
+    let frames = 0;
+    let animationFrameId: number;
+    
+    const tick = () => {
+      frames++;
+      const now = performance.now();
+      if (now >= lastTime + 1000) {
+        if (fpsRef.current) {
+          fpsRef.current.innerText = `${Math.round((frames * 1000) / (now - lastTime))} FPS`;
+        }
+        frames = 0;
+        lastTime = now;
+      }
+      animationFrameId = requestAnimationFrame(tick);
+    };
+    
+    animationFrameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
+  
+  const triangles = Math.round(faces.length / 3);
+  const kTriangles = triangles > 1000 ? `${(triangles / 1000).toFixed(1)}k` : triangles;
+  
+  return (
+    <div className="absolute top-16 left-3 z-10 bg-white/95 border border-slate-200/80 backdrop-blur-md p-2.5 rounded-lg text-xs font-mono text-slate-600 pointer-events-auto flex flex-col gap-1 w-48 shadow-sm">
+      <div className="text-slate-800 font-bold flex justify-between">
+        <span>DIAGNÓSTICOS CAD</span>
+        <span ref={fpsRef} className="text-emerald-600 font-black">-- FPS</span>
+      </div>
+      <hr className="border-slate-200 my-0.5" />
+      <div className="flex justify-between"><span>Triángulos:</span><span className="font-bold text-slate-800">{kTriangles}</span></div>
+      <div className="flex justify-between"><span>Vértices:</span><span className="font-bold text-slate-800">{vertices.length / 3}</span></div>
+      <div className="flex justify-between"><span>Resolución:</span><span className="font-bold text-slate-800">{resolution}</span></div>
+      <div className="flex justify-between"><span>Carga GPU:</span><span className="font-bold text-sky-600">{triangles > 200000 ? "Alta" : triangles > 50000 ? "Media" : "Baja"}</span></div>
+    </div>
+  );
+}
+
+function QualityHUD() {
+  const { resolution, setParam } = useLabStore(
+    useShallow((state) => ({
+      resolution: state.resolution,
+      setParam: state.setParam,
+    }))
+  );
+  
+  const resolutions = [
+    { value: "Baja", label: "Draft" },
+    { value: "Media", label: "Balanced" },
+    { value: "Alta", label: "High" },
+    { value: "Ultra", label: "Ultra" },
+  ];
+  
+  return (
+    <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 bg-white/95 border border-slate-200/80 p-0.5 rounded-lg flex space-x-0.5 shadow-sm text-sm pointer-events-auto">
+      {resolutions.map((r) => (
+        <button
+          key={r.value}
+          onClick={() => setParam("resolution", r.value)}
+          className={`px-2.5 py-1 text-xs font-bold rounded-md uppercase tracking-wider cursor-pointer transition-all ${
+            resolution === r.value
+              ? "bg-[#1E40AF] text-white shadow-2xs font-bold"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+          }`}
+        >
+          {r.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PrintEstimationHUD() {
+  const { predictions, material, selectedPrinter } = useLabStore(
+    useShallow((state) => ({
+      predictions: state.predictions,
+      material: state.material,
+      selectedPrinter: state.selectedPrinter,
+    }))
+  );
+
+  const printTimeMins = predictions?.printingTimeMinutes || 0;
+  const hours = Math.floor(printTimeMins / 60);
+  const mins = printTimeMins % 60;
+  const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  
+  const mass = predictions?.massGrams || 0;
+  const speed = useLabStore((state) => state.printSpeed);
+  const lh = useLabStore((state) => state.layerHeight);
+  const isTPU = material.toUpperCase() === "TPU";
+  const maxFlow = isTPU ? 8.0 : 32.0;
+  const flowVal = Math.min(maxFlow, speed * lh * 0.45).toFixed(1);
+
+  return (
+    <div className="absolute bottom-3 left-3 z-10 bg-white/95 border border-slate-200/80 backdrop-blur-md p-2.5 rounded-lg text-xs font-mono text-slate-600 pointer-events-auto flex flex-col gap-1 w-52 shadow-sm">
+      <div className="text-slate-800 font-bold uppercase tracking-wider">
+        Estimación Impresión
+      </div>
+      <hr className="border-slate-200 my-0.5" />
+      <div className="flex justify-between"><span>Tiempo:</span><span className="font-bold text-sky-600">{timeStr}</span></div>
+      <div className="flex justify-between"><span>Masa:</span><span className="font-bold text-emerald-600">{mass.toFixed(1)} g</span></div>
+      <div className="flex justify-between"><span>Flujo:</span><span className="font-bold text-slate-800">{flowVal} mm³/s</span></div>
+      <div className="flex justify-between"><span>Perfil:</span><span className="font-bold text-slate-800 truncate max-w-[100px]">{selectedPrinter}</span></div>
+    </div>
+  );
+}
+
+export default function BaseViewport() {
+  const [isInteracting, setIsInteracting] = React.useState(false);
+  const {
+    dimX,
+    viewportMode,
+    sliceHeight,
+    material,
+    meshVertices,
+    meshFaces,
+    loadingMesh,
+    cameraAngle,
+    setParam,
+    selectedPrinter,
+    printerProfiles,
+    showBuildPlate,
+    resolution,
+  } = useLabStore(
+    useShallow((state) => ({
+      dimX: state.dimX,
+      viewportMode: state.viewportMode,
+      sliceHeight: state.sliceHeight,
+      material: state.material,
+      meshVertices: state.meshVertices,
+      meshFaces: state.meshFaces,
+      loadingMesh: state.loadingMesh,
+      cameraAngle: state.cameraAngle,
+      setParam: state.setParam,
+      selectedPrinter: state.selectedPrinter,
+      printerProfiles: state.printerProfiles,
+      showBuildPlate: state.showBuildPlate,
+      resolution: state.resolution,
+    }))
+  );
+
+  const sizeMm = dimX * 10; // in mm
+
+  return (
+    <div className="relative w-full h-full bg-[#FAFBFC] flex flex-col border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      {/* Floating Viewport Toolbar */}
+      <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
+        {/* Shading / View Modes */}
+        <div className="bg-white/95 border border-slate-200/80 p-0.5 rounded-lg flex space-x-0.5 shadow-sm text-sm pointer-events-auto overflow-x-auto max-w-[70%] scrollbar-none font-bold backdrop-blur-xs">
+          {(["solid", "shell", "wireframe", "transparent", "heatmap", "slicer"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setParam("viewportMode", mode as PipelineProps["mode"])}
+              className={`px-2.5 py-1 text-xs lg:text-sm font-black rounded-md capitalize transition-all cursor-pointer whitespace-nowrap ${
+                viewportMode === mode
+                  ? "bg-[#1E40AF] text-white shadow-2xs font-bold"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+              }`}
+            >
+              {mode === "solid"
+                ? "Sólido"
+                : mode === "shell"
+                ? "Carcasa"
+                : mode === "wireframe"
+                ? "Alámbrico"
+                : mode === "transparent"
+                ? "Transparente"
+                : mode === "heatmap"
+                ? "Estrés"
+                : "Sección"}
+            </button>
+          ))}
+        </div>
+
+        {/* Camera Preset Angles */}
+        <div className="bg-white/95 border border-slate-200/80 p-0.5 rounded-lg flex space-x-0.5 shadow-sm text-sm pointer-events-auto font-bold backdrop-blur-xs">
+          {(["perspective", "top", "front", "side"] as const).map((angle) => (
+            <button
+              key={angle}
+              onClick={() => setParam("cameraAngle", angle)}
+              className={`px-2.5 py-1 text-xs lg:text-sm font-black rounded-md capitalize transition-all cursor-pointer ${
+                cameraAngle === angle
+                  ? "bg-[#1E40AF] text-white shadow-2xs font-bold"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+              }`}
+            >
+              {angle === "perspective"
+                ? "Persp"
+                : angle === "top"
+                ? "Top"
+                : angle === "front"
+                ? "Front"
+                : "Side"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Floating HUD Overlays */}
+      <PerformanceHUD vertices={meshVertices} faces={meshFaces} resolution={resolution} />
+      <QualityHUD />
+      <PrintEstimationHUD />
+
+      {/* Loading Overlay */}
+      {loadingMesh && (
+        <div className="absolute inset-0 bg-slate-950/80 z-20 flex flex-col items-center justify-center backdrop-blur-xs">
+          <div className="w-8 h-8 border-3 border-[#38bdf8] border-t-transparent rounded-full animate-spin"></div>
+          <span className="mt-3.5 text-sm text-slate-350 font-bold font-mono tracking-widest uppercase">
+            COMPILANDO GEOMETRÍA SDF...
+          </span>
+        </div>
+      )}
+
+      {/* Interactive 3D Canvas */}
+      <div className="flex-1 w-full">
+        <Canvas
+          shadows
+          camera={{ position: [60, 60, 80], fov: 45 }}
+          gl={{ localClippingEnabled: true }}
+        >
+          <CameraController />
+          <color attach="background" args={["#FAFBFC"]} />
+          <ambientLight intensity={0.25} />
+          <hemisphereLight color="#f8fafc" groundColor="#64748b" intensity={0.35} />
+          
+          {/* Main key light with shadow casting */}
+          <directionalLight
+            position={[80, 100, 50]}
+            intensity={1.1}
+            castShadow
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
+            shadow-bias={-0.00005}
+          />
+          
+          {/* Fill light */}
+          <directionalLight
+            position={[-80, -50, -50]}
+            intensity={0.3}
+          />
+          
+          {/* Subtle blue accent rim light to bring out structural depth and highlights */}
+          <pointLight position={[0, 80, -80]} intensity={0.5} color="#38bdf8" />
+
+          <group rotation={[0, 0, 0]}>
+            <RenderPipelineDispatcher
+               vertices={meshVertices}
+               faces={meshFaces}
+               mode={viewportMode}
+               material={material}
+               size={sizeMm}
+               sliceHeight={sliceHeight}
+               isInteracting={isInteracting}
+            />
+            <DimensionLines size={sizeMm} />
+            
+            {/* Ground shadow receiver */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -sizeMm / 2 - 0.15, 0]} receiveShadow>
+              <planeGeometry args={[400, 400]} />
+              <shadowMaterial opacity={0.12} />
+            </mesh>
+
+            {showBuildPlate && (
+              <BuildPlate
+                printerName={selectedPrinter}
+                printerProfiles={printerProfiles}
+                size={sizeMm}
+              />
+            )}
+          </group>
+
+          <OrbitControls
+            makeDefault
+            enableDamping
+            dampingFactor={0.05}
+            onStart={() => setIsInteracting(true)}
+            onEnd={() => setIsInteracting(false)}
+          />
+        </Canvas>
+      </div>
+
+      {/* Bottom Slider for Slicer Height (Z) */}
+      {viewportMode === "slicer" && (
+        <div className="absolute bottom-16 left-4 right-4 z-10 bg-white/95 border border-slate-200/80 p-3.5 rounded-lg flex flex-col space-y-1.5 shadow-sm font-sans backdrop-blur-xs">
+          <div className="flex justify-between items-baseline text-xs lg:text-sm font-semibold">
+            <span className="text-slate-550 uppercase tracking-wider">PLANO DE LAMINADO (Z)</span>
+            <span className="text-[#1E40AF] font-bold font-mono">{(sliceHeight / 10).toFixed(2)} cm / {sliceHeight.toFixed(1)} mm</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={sizeMm}
+            step={0.5}
+            value={sliceHeight}
+            onChange={(e) => setParam("sliceHeight", parseFloat(e.target.value))}
+            className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E40AF]"
+          />
+          <div className="flex justify-between text-xs text-slate-400 font-mono">
+            <span>Base (0.0 mm)</span>
+            <span>Máximo ({sizeMm.toFixed(1)} mm)</span>
+          </div>
+        </div>
+      )}
+
+      {/* Axis compass overlay */}
+      <div className="absolute bottom-3 right-3 text-[10px] lg:text-xs font-mono text-slate-550 bg-white/95 p-2.5 rounded-lg border border-slate-200/80 pointer-events-none shadow-sm flex flex-col gap-1 backdrop-blur-xs">
+        <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"/>Y: VERTICAL</div>
+        <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"/>Z: PROFUNDIDAD</div>
+        <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-500"/>X: ANCHO</div>
+      </div>
+    </div>
+  );
+}
