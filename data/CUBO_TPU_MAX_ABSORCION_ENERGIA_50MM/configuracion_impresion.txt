@@ -1,6 +1,6 @@
 Configuración de Impresión Optimizada - TPU 50mm
 ================================================
-Patrón: gyroid
+Patrón: tpms_graded
 Infill: 10.0%
 Paredes: 2 (0.8mm)
 Material: TPU (Shore 95A recomendado)

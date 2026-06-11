@@ -43,6 +43,14 @@ class TestCopilotPipeline(unittest.TestCase):
         self.assertEqual(report["corrected_patch"]["dimX"], 5.0)
         self.assertTrue(any("dimX" in w for w in report["warnings"]))
 
+    def test_pattern_tpms_suffix_normalization(self):
+        patch_data = {"pattern": "diamond_tpms"}
+        report = validate_config_patch(self.current_config, patch_data)
+        
+        # Check pattern is cleaned to "diamond"
+        self.assertTrue(report["is_valid"])
+        self.assertEqual(report["corrected_patch"]["pattern"], "diamond")
+
     # 2. test_mass_limit_100g()
     def test_mass_limit_100g(self):
         # Extreme massive cube config: 5x5x5 cm and 100% infill density

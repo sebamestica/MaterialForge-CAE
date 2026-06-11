@@ -32,7 +32,7 @@ median_n_readings = 1500 # Placeholder
 # --- 2. OPTIMIZATION ---
 print("Optimizing TPU cube design...")
 
-patterns = ['gyroid', 'honeycomb', 'triply_periodic']
+patterns = ['gyroid', 'honeycomb', 'triply_periodic', 'tpms_graded']
 infill_densities = np.linspace(10, 60, 11)  # Low to medium for energy absorption
 wall_thicknesses = [0.8, 1.2, 1.6, 2.0] # 2, 3, 4, 5 walls
 
@@ -52,7 +52,8 @@ def calculate_mass(infill_pct, wall_t):
 pattern_multipliers = {
     'gyroid': 1.2, # Gyroids are excellent for energy absorption
     'honeycomb': 0.8, # Buckling makes it less progressive
-    'triply_periodic': 1.0 # Base reference from data
+    'triply_periodic': 1.0, # Base reference from data
+    'tpms_graded': 1.4 # High efficiency progressive energy absorption
 }
 
 for pattern in patterns:
@@ -133,44 +134,47 @@ print(f"Winner: {winner['variante']} with score {winner['score final']:.3f}")
 
 # --- 3. GENERATE 3D MODEL ---
 print("Generating 3D mesh for winner...")
-res = 1.0 # 1mm resolution
-grid_size = int(CUBE_SIZE / res) + 1
-x = np.linspace(0, CUBE_SIZE, grid_size)
-y = np.linspace(0, CUBE_SIZE, grid_size)
-z = np.linspace(0, CUBE_SIZE, grid_size)
-X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
+import sys
+from pathlib import Path
+_script_dir = Path(__file__).parent
+_backend_dir = _script_dir.parent
+_workspace_dir = _backend_dir.parent
+if str(_workspace_dir) not in sys.path:
+    sys.path.append(str(_workspace_dir))
+if str(_backend_dir) not in sys.path:
+    sys.path.append(str(_backend_dir))
 
-# Outer walls
-wall_t = winner['espesor de pared']
-is_wall = (X < wall_t) | (X > CUBE_SIZE - wall_t) | \
-          (Y < wall_t) | (Y > CUBE_SIZE - wall_t) | \
-          (Z < wall_t) | (Z > CUBE_SIZE - wall_t)
+from src.geometry.compiler import compile_trimesh_geometry
 
-# Infill Pattern
-pattern = winner['patrón']
-infill_pct = winner['infill']
+class MockPayload:
+    def __init__(self, pattern, infillDensity, wallThickness, infillThickness, 
+                 material, size=50.0, showShell=True, cellSize=8.0, 
+                 orientation="Isotrópica", resolution="Media"):
+        self.pattern = pattern
+        self.infillDensity = infillDensity
+        self.wallThickness = wallThickness
+        self.infillThickness = infillThickness
+        self.material = material
+        self.size = size
+        self.showShell = showShell
+        self.cellSize = cellSize
+        self.orientation = orientation
+        self.resolution = resolution
 
-if pattern == 'gyroid':
-    k = (2 * np.pi) / (CUBE_SIZE / 5) # 5 cells
-    field = np.sin(k * X) * np.cos(k * Y) + np.sin(k * Y) * np.cos(k * Z) + np.sin(k * Z) * np.cos(k * X)
-    threshold = (infill_pct / 100.0) - 0.5 # Rough approximation
-    is_infill = field < threshold
-elif pattern == 'honeycomb':
-    # Simplified 2D Honeycomb extruded
-    k = (2 * np.pi) / (CUBE_SIZE / 8)
-    field = np.cos(k * X) + np.cos(k * Y) + np.cos(k * (X - Y))
-    threshold = (infill_pct / 100.0) * 2.0 - 1.0
-    is_infill = field < threshold
-else: # triply_periodic / Schwarz P
-    k = (2 * np.pi) / (CUBE_SIZE / 5)
-    field = np.cos(k * X) + np.cos(k * Y) + np.cos(k * Z)
-    threshold = (infill_pct / 100.0) * 1.5 - 0.75
-    is_infill = field < threshold
+payload = MockPayload(
+    pattern=winner['patrón'],
+    infillDensity=float(winner['infill']),
+    wallThickness=float(winner['espesor de pared']),
+    infillThickness=0.6,
+    material='tpu',
+    size=CUBE_SIZE,
+    showShell=True,
+    cellSize=8.0,
+    orientation="Isotrópica",
+    resolution="Media"
+)
 
-vol = is_wall | is_infill
-verts, faces, normals, values = measure.marching_cubes(vol, level=0.5)
-verts = verts * res
-mesh = trimesh.Trimesh(vertices=verts, faces=faces)
+mesh = compile_trimesh_geometry(payload, for_stl=True)
 
 # Validate & Repair
 print("Validating mesh...")

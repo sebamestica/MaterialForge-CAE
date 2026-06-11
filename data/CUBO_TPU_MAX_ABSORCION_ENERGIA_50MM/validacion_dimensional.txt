@@ -1,7 +1,7 @@
 Validación Dimensional
 ----------------------
 Dimensiones Objetivo: 50.0 x 50.0 x 50.0 mm
-Dimensiones Reales (Malla): 49.00 x 49.00 x 49.00 mm
-Volumen Malla: 73819.75 mm3
-Masa Estimada Final: 88.58 g
+Dimensiones Reales (Malla): 49.74 x 49.74 x 49.74 mm
+Volumen Malla: 23245.27 mm3
+Masa Estimada Final: 27.89 g
 Estado Manifold: True

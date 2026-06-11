@@ -254,12 +254,12 @@ export default function ManufacturingPanel() {
               ) : (
                 <>
                   <Cpu className="w-4 h-4" />
-                  <span>AI POSTPROCESS (VALIDAR & REPARAR)</span>
+                  <span>POSTPROCESAMIENTO IA (VALIDAR Y REPARAR)</span>
                 </>
               )}
             </button>
             <p className="text-xs text-slate-455 text-center leading-normal">
-              Valida la watertightness de la malla de infill gyroid, corrige normales invertidas y genera configs óptimas basadas en las restricciones físicas del hardware.
+              Valida la estanqueidad de la malla de infill gyroid, corrige normales invertidas y genera configs óptimas basadas en las restricciones físicas del hardware.
             </p>
           </div>
 
@@ -297,11 +297,11 @@ export default function ManufacturingPanel() {
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${mfgValidation.watertight ? "bg-emerald-500" : "bg-rose-500 animate-pulse"}`} />
                       <span className="text-slate-500">Estanqueidad:</span>
-                      <span className="font-bold text-slate-800">{mfgValidation.watertight ? "Watertight" : "Agujeros"}</span>
+                      <span className="font-bold text-slate-800">{mfgValidation.watertight ? "Hermético" : "Agujeros"}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${mfgValidation.manifold ? "bg-emerald-500" : "bg-rose-500 animate-pulse"}`} />
-                      <span className="text-slate-500">Manifold:</span>
+                      <span className="text-slate-500">Topología:</span>
                       <span className="font-bold text-slate-800">{mfgValidation.manifold ? "Cerrado" : "Abierto"}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -332,7 +332,7 @@ export default function ManufacturingPanel() {
                     2. Reparación Quirúrgica del STL
                   </span>
                   <span className="text-xs px-1.5 py-0.5 font-bold uppercase rounded border text-emerald-700 bg-emerald-50 border-emerald-200">
-                    Auto-repaired
+                    Auto-reparado
                   </span>
                 </div>
                 <div className="p-3 space-y-2.5 text-sm leading-normal font-mono">
@@ -363,7 +363,7 @@ export default function ManufacturingPanel() {
                 <div className="p-3 space-y-3 font-sans">
                   <div className="grid grid-cols-2 gap-2.5 text-sm border-b border-slate-100 pb-2.5">
                     <div>
-                      <span className="text-slate-455 block uppercase text-xs font-bold">Warping Probability:</span>
+                      <span className="text-slate-455 block uppercase text-xs font-bold">Probabilidad de Deformación:</span>
                       <span className={`font-bold font-mono ${material.toLowerCase() === "abs" ? "text-rose-600" : "text-emerald-600"}`}>
                         {material.toLowerCase() === "abs" ? "CRÍTICO (Alta)" : "BAJO (Apto)"}
                       </span>
@@ -382,7 +382,7 @@ export default function ManufacturingPanel() {
                     )}
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500 font-medium">Printability Rating:</span>
+                    <span className="text-slate-500 font-medium">Índice de Imprimibilidad:</span>
                     <span className="font-black text-slate-800 font-mono">
                       {mfgValidation.mesh_quality_score > 75 ? "APTO PARA PRODUCCIÓN" : "APTO CON PRECAUCIONES"}
                     </span>
@@ -397,7 +397,7 @@ export default function ManufacturingPanel() {
                     4. Parámetros de Slicer Optimizados (ML)
                   </span>
                   <span className="text-xs px-1.5 py-0.5 font-bold uppercase rounded border text-[#1E40AF] bg-blue-50 border-blue-200 flex items-center gap-0.5">
-                    <Cpu className="w-3 h-3" /> ML Active
+                    <Cpu className="w-3 h-3" /> IA Activa
                   </span>
                 </div>
                 <div className="p-3 text-sm font-mono divide-y divide-slate-100">
@@ -508,7 +508,7 @@ export default function ManufacturingPanel() {
           <div className="text-amber-800 bg-amber-50 border border-amber-200 p-3 rounded-lg text-center font-extrabold text-sm uppercase tracking-wider flex flex-col items-center gap-1 shadow-2xs">
             <div className="flex items-center gap-1.5 text-amber-750">
               <AlertTriangle className="w-5 h-5 text-amber-600 animate-pulse" />
-              <span>⚠️ PREVIEW / NON-PRODUCTION TOOLPATH</span>
+              <span>⚠️ VISTA PREVIA / TRAYECTORIA NO PRODUCTIVA</span>
             </div>
             <p className="font-normal text-xs text-amber-700 tracking-normal normal-case pt-1.5 max-w-md mx-auto leading-relaxed">
               Las trayectorias de G-code generadas por MaterialForge son únicamente para propósitos de visualización CAD tridimensional y validación volumétrica. Por favor, delegue el slicing productivo final a OrcaSlicer, Cura o PrusaSlicer usando los perfiles de manufactura exportados.

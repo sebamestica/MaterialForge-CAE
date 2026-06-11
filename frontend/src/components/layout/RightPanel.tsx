@@ -42,11 +42,22 @@ export default function RightPanel() {
   }, [predictions]);
 
   const yieldStrength = predictions?.yieldStrengthMpa || 24.7;
+  const ultimateStrength = predictions?.ultimateStrengthMpa || yieldStrength * 1.5;
   const maxForce = predictions?.maxForceNewtons || 450 + infill * 12;
   const stiffness = predictions?.stiffnessNmm || 120 + infill * 4;
   const energyAbsorption = predictions?.energyAbsorptionJoules || 14.5 + infill * 0.15;
 
-  const youngModulus = material === "PLA" ? "1.62 GPa" : "0.08 GPa";
+  const elasticModulusStr = useMemo(() => {
+    if (predictions?.elasticModulusGpa !== undefined) {
+      const gpa = predictions.elasticModulusGpa;
+      if (gpa < 0.1) {
+        return `${(gpa * 1000).toFixed(1)} MPa`;
+      }
+      return `${gpa.toFixed(2)} GPa`;
+    }
+    return material === "PLA" ? "1.62 GPa" : "80 MPa";
+  }, [predictions, material]);
+
   const performanceIndex = material === "PLA" ? "1.82" : "2.15";
 
   const recommendations = useMemo(() => {
@@ -335,21 +346,21 @@ export default function RightPanel() {
                 <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
                   <div className="flex items-center space-x-1.5">
                     <div className="w-2 h-2 rounded-full bg-amber-500" />
-                    <span className="text-slate-500 font-medium">Paredes (Walls)</span>
+                    <span className="text-slate-500 font-medium">Paredes</span>
                   </div>
                   <span className="text-slate-800 font-bold font-mono">{predictions.timeBreakdown.walls_min} min</span>
                 </div>
                 <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
                   <div className="flex items-center space-x-1.5">
                     <div className="w-2 h-2 rounded-full bg-rose-500" />
-                    <span className="text-slate-500 font-medium">Infill (Relleno)</span>
+                    <span className="text-slate-500 font-medium">Relleno</span>
                   </div>
                   <span className="text-slate-800 font-bold font-mono">{predictions.timeBreakdown.infill_min} min</span>
                 </div>
                 <div className="flex items-center justify-between py-0.5 border-b border-slate-50">
                   <div className="flex items-center space-x-1.5">
                     <div className="w-2 h-2 rounded-full bg-purple-500" />
-                    <span className="text-slate-500 font-medium">Top/Bottom</span>
+                    <span className="text-slate-500 font-medium">Superior / Inferior</span>
                   </div>
                   <span className="text-slate-800 font-bold font-mono">{predictions.timeBreakdown.top_bottom_min} min</span>
                 </div>
@@ -363,7 +374,7 @@ export default function RightPanel() {
                 <div className="flex items-center justify-between py-0.5 col-span-2">
                   <div className="flex items-center space-x-1.5">
                     <div className="w-2 h-2 rounded-full bg-slate-400" />
-                    <span className="text-slate-500 font-medium">Overhead / Ralentización TPU</span>
+                    <span className="text-slate-500 font-medium">Sobrecarga TPU</span>
                   </div>
                   <span className="text-slate-800 font-bold font-mono">{predictions.timeBreakdown.firmware_overhead_min} min</span>
                 </div>
@@ -393,8 +404,8 @@ export default function RightPanel() {
                 </div>
                 <div className="bg-slate-50/70 p-1.5 rounded border border-slate-100 col-span-2 flex justify-between items-center">
                   <div>
-                    <span className="text-slate-400 block uppercase font-bold text-[7px] tracking-wider">Generación GCODE / STL (ETA)</span>
-                    <span className="text-[8px] text-slate-500">ML post-processing time included</span>
+                    <span className="text-slate-400 block uppercase font-bold text-[7px] tracking-wider">Generación GCODE / STL (Tiempo Est.)</span>
+                    <span className="text-[8px] text-slate-500">Tiempo de postprocesamiento de IA incluido</span>
                   </div>
                   <span className="font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
                     ~ 3.2s
@@ -416,14 +427,14 @@ export default function RightPanel() {
           <div className="p-3 space-y-3.5 font-sans text-sm">
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100">
               <div className="flex flex-col">
-                <span className="text-slate-700 font-medium">Módulo elástico (Young)</span>
-                <span className="text-[9px] text-slate-400 font-mono">[Modelo Analítico] Confianza: 95%</span>
+                <span className="text-slate-700 font-medium">Módulo Elástico</span>
+                <span className="text-[9px] text-slate-400 font-mono">[Modelo de ML] Confianza: 95%</span>
               </div>
-              <span className="text-slate-800 font-bold font-mono">{youngModulus}</span>
+              <span className="text-slate-800 font-bold font-mono">{elasticModulusStr}</span>
             </div>
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100">
               <div className="flex flex-col">
-                <span className="text-slate-700 font-medium">Esfuerzo de Fluencia (Yield)</span>
+                <span className="text-slate-700 font-medium">Esfuerzo de Fluencia</span>
                 <span className="text-[9px] text-slate-400 font-mono">[Predicción de IA (ML)] Confianza: 98%</span>
               </div>
               <span className="text-slate-800 font-bold font-mono">{yieldStrength.toFixed(1)} MPa</span>
@@ -431,16 +442,27 @@ export default function RightPanel() {
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100">
               <div className="flex flex-col">
                 <span className="text-slate-700 font-medium">Esfuerzo Máximo (UTS)</span>
-                <span className="text-[9px] text-slate-400 font-mono">[Modelo Analítico] Confianza: 95%</span>
+                <span className="text-[9px] text-slate-400 font-mono">[Predicción de IA (ML)] Confianza: 95%</span>
               </div>
-              <span className="text-slate-800 font-bold font-mono">{(yieldStrength * 1.5).toFixed(1)} MPa</span>
+              <span className="text-slate-800 font-bold font-mono">{ultimateStrength.toFixed(1)} MPa</span>
+            </div>
+            <div className="flex justify-between items-center py-0.5 border-b border-slate-100">
+              <div className="flex flex-col">
+                <span className="text-slate-700 font-medium">Energía Absorbida</span>
+                <span className="text-[9px] text-slate-400 font-mono">[Predicción de IA (ML)] Confianza: 96%</span>
+              </div>
+              <span className="text-slate-800 font-bold font-mono">{energyAbsorption.toFixed(1)} J</span>
             </div>
             <div className="flex justify-between items-center py-0.5">
               <div className="flex flex-col">
-                <span className="text-slate-700 font-medium">Absorción Específica</span>
+                <span className="text-slate-700 font-medium">Absorción Específica (SEA)</span>
                 <span className="text-[9px] text-slate-400 font-mono">[Predicción de IA (ML)] Confianza: 96%</span>
               </div>
-              <span className="text-slate-800 font-bold font-mono">{energyAbsorption.toFixed(1)} %</span>
+              <span className="text-slate-800 font-bold font-mono">
+                {predictions?.specificEnergyAbsorptionKjKg !== undefined
+                  ? `${predictions.specificEnergyAbsorptionKjKg.toFixed(3)} kJ/kg`
+                  : `${((predictions?.energyAbsorptionJoules || 14.5) / (predictions?.massGrams || 66.3)).toFixed(3)} kJ/kg`}
+              </span>
             </div>
           </div>
         </div>

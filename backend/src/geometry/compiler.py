@@ -18,10 +18,24 @@ def compile_trimesh_geometry(payload: Any, for_stl: bool, extractor: MeshExtract
     wall_t = float(payload.wallThickness)
     infill_pct = float(payload.infillDensity)
     infill_thickness = float(payload.infillThickness)
-    pattern = payload.pattern
+    pattern = payload.pattern.lower().strip()
+    if pattern.endswith("_tpms"):
+        pattern = pattern[:-5]
+    try:
+        payload.pattern = pattern
+    except Exception:
+        pass
     show_shell = payload.showShell
     
     # 1. Map base resolution preset and max grid size limit based on quality profile
+    res_preset = getattr(payload, "resolution", "Media")
+    # Resolution promotion guard for low infill densities (< 15%) to resolve thin-walled features
+    if infill_pct < 15.0:
+        if res_preset == "Baja":
+            res_preset = "Media"
+        elif res_preset == "Media":
+            res_preset = "Alta"
+            
     if for_stl:
         res_map = {"Baja": 1.4, "Media": 0.9, "Alta": 0.55, "Ultra": 0.35}
         max_grid_size_map = {"Baja": 45, "Media": 70, "Alta": 100, "Ultra": 150}
@@ -29,8 +43,8 @@ def compile_trimesh_geometry(payload: Any, for_stl: bool, extractor: MeshExtract
         res_map = {"Baja": 1.6, "Media": 1.0, "Alta": 0.7, "Ultra": 0.45}
         max_grid_size_map = {"Baja": 35, "Media": 55, "Alta": 80, "Ultra": 115}
         
-    res = res_map.get(payload.resolution, 0.8)
-    max_grid_size = max_grid_size_map.get(payload.resolution, 70)
+    res = res_map.get(res_preset, 0.8)
+    max_grid_size = max_grid_size_map.get(res_preset, 70)
     
     # Raw cell size input constraint
     raw_cell_size = payload.cellSize if payload.cellSize > 0.5 else 8.0

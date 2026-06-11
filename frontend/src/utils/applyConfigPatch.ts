@@ -25,13 +25,22 @@ export function applyConfigPatch(patch: ConfigPatch): boolean {
     Object.entries(patch).forEach(([key, value]) => {
       if (value === undefined || value === null) return;
 
+      let finalValue = value;
+      if (key === "pattern" && typeof value === "string") {
+        let cleanVal = value.toLowerCase().trim();
+        if (cleanVal.endsWith("_tpms")) {
+          cleanVal = cleanVal.slice(0, -5);
+        }
+        finalValue = cleanVal;
+      }
+
       if (numberParams.includes(key)) {
-        const numVal = Number(value);
+        const numVal = Number(finalValue);
         if (!isNaN(numVal)) {
           labStore.setParam(key as any, numVal);
         }
       } else {
-        labStore.setParam(key as any, value);
+        labStore.setParam(key as any, finalValue);
       }
     });
 

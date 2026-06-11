@@ -770,16 +770,39 @@ def export_manufacturing_endpoint(req: ManufacturingValidationRequest):
     material = config.material.upper()
     infill = config.infill
     layer_h = config.layerHeight
+    speed = config.printSpeed
     
     from .tools.physics_calculator import PhysicsCalculator
-    
     volume_cm3 = (config.dimX * config.dimY * config.dimZ)
-    mass_g = PhysicsCalculator.estimate_mass(
-        volume_cm3=volume_cm3,
-        infill_percent=infill,
-        material=material,
-        wall_thickness_mm=config.wallThickness
-    )
+    
+    from backend.src.geometry.compiler import compile_trimesh_geometry
+    from backend.main import STLOptPayload
+    from backend.src.optimization.RealMassEstimator import calculate_mesh_mass
+    
+    try:
+        # Construct compatible payload to compile geometry
+        stl_payload = STLOptPayload(
+            pattern=config.pattern,
+            infillDensity=config.infill,
+            wallThickness=config.wallThickness,
+            infillThickness=config.cellThickness,
+            material=config.material,
+            size=size_mm,
+            showShell=True,
+            cellSize=config.cellSize,
+            orientation=config.orientation or "Isotrópica",
+            resolution=config.resolution or "Alta"
+        )
+        mesh = compile_trimesh_geometry(stl_payload, for_stl=False)
+        mass_g = calculate_mesh_mass(mesh, config.material)
+    except Exception as e:
+        print(f"[COPILOT EXPORT] Error compiling mesh for real mass: {e}")
+        mass_g = PhysicsCalculator.estimate_mass(
+            volume_cm3=volume_cm3,
+            infill_percent=infill,
+            material=config.material,
+            wall_thickness_mm=config.wallThickness
+        )
     
     time_data = PhysicsCalculator.estimate_print_time(
         volume_cm3=volume_cm3,
@@ -885,6 +908,25 @@ def export_manufacturing_endpoint(req: ManufacturingValidationRequest):
     with open(profile_path, "w", encoding="utf-8") as f:
         json.dump(profile_summary, f, indent=4)
 
+    mat_lower = config.material.lower().strip()
+    if "pla" in mat_lower:
+        density = 1.24
+    elif "tpu" in mat_lower:
+        density = 1.20
+    elif "petg" in mat_lower:
+        density = 1.27
+    elif "abs" in mat_lower:
+        density = 1.04
+    else:
+        density = PhysicsCalculator.MATERIAL_DENSITIES.get(mat_lower, 1.24)
+
+    try:
+        mesh_vol = float(abs(mesh.volume))
+        mass_src = "mesh_volume"
+    except NameError:
+        mesh_vol = volume_cm3 * 1000.0
+        mass_src = "pre_mesh_preview"
+
     return {
         "status": "success",
         "validation": val_report.dict(),
@@ -894,8 +936,22 @@ def export_manufacturing_endpoint(req: ManufacturingValidationRequest):
             "layers_count": int(size_mm / layer_h),
             "filament_length_m": round(mass_g / 3.0, 2),
             "gcode_file": gcode_filename,
-            "profile_file": profile_filename
+            "profile_file": profile_filename,
+            "mesh_volume_mm3": mesh_vol,
+            "material_density_g_cm3": density,
+            "mesh_mass_g": round(mass_g, 2),
+            "estimated_pre_mesh_mass": None if mass_src == "mesh_volume" else round(mass_g, 2),
+            "mass_source": mass_src,
+            "is_mass_limit_valid": mass_g <= 100.0,
+            "mass_limit_g": 100.0
         },
         "gcode_preview": gcode_lines[:30],
-        "orcaslicer_profile": profile_summary
+        "orcaslicer_profile": profile_summary,
+        "mesh_volume_mm3": mesh_vol,
+        "material_density_g_cm3": density,
+        "mesh_mass_g": round(mass_g, 2),
+        "estimated_pre_mesh_mass": None if mass_src == "mesh_volume" else round(mass_g, 2),
+        "mass_source": mass_src,
+        "is_mass_limit_valid": mass_g <= 100.0,
+        "mass_limit_g": 100.0
     }

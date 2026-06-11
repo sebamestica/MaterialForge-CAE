@@ -55,7 +55,7 @@ export default function CopilotWidget() {
       id: "welcome",
       role: "assistant",
       content:
-        "MaterialForge CAE/CAD Optimization Kernel Ready.\n- Detect mechanical target constraints.\n- Compute structural cell parameters.\n- Optimize mass and infill density gradients.\n- Export slicing config patches.\n\nInput design target or request optimization candidate.",
+        "Núcleo de Optimización CAE/CAD MaterialForge Listo.\n- Detecta restricciones mecánicas objetivo.\n- Calcula parámetros de celda estructural.\n- Optimiza gradientes de densidad de relleno y masa.\n- Exporta parches de configuración de laminado.\n\nIngresa el objetivo de diseño o solicita un candidato de optimización.",
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);

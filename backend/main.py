@@ -157,6 +157,10 @@ def system_health():
 
 @app.post("/api/predict_structural_load")
 def predict_structural_load(payload: PredictionPayload):
+    # Normalize patternType
+    if payload.slicing.patternType.lower().strip().endswith("_tpms"):
+        payload.slicing.patternType = payload.slicing.patternType.lower().strip()[:-5]
+        
     # Bounds validations to prevent unstable calculations or division by zero in downstream logic
     if not (0.0 <= payload.slicing.infillPercentage <= 100.0):
         raise HTTPException(status_code=400, detail="Infill percentage must be between 0.0 and 100.0.")
@@ -177,12 +181,16 @@ def predict_structural_load(payload: PredictionPayload):
         max_force = strength * area
         energy_j = (10.0 * volume) / 1000.0 if volume > 0 else 14.5 + (infill * 0.15)
         stiffness = (1500.0 * area) / box[2] if len(box) >= 3 and box[2] > 0 else 100.0
+        fallback_modulus = 1500.0 if payload.material.type.lower() == "pla" else 80.0
+        fallback_modulus += infill * 5.0
         
         data = {
             "strength_MPa": strength,
+            "modulus_MPa": fallback_modulus,
             "max_force_N": max_force,
             "energy_J": energy_j,
             "stiffness_N_mm": stiffness,
+            "sea_kJ_kg": energy_j / 66.3 if energy_j > 0 else 0.05,
             "mass_g": 0.0,
             "print_time_seconds": 0.0,
             "time_breakdown": {},
@@ -203,25 +211,59 @@ def predict_structural_load(payload: PredictionPayload):
     if infill < 10:
         out_warnings.append({"code": "W_LOW_INFILL", "severity": "high", "text": "Infill too low. High risk of shell collapse."})
 
+    # Get exact density of material for preview metadata
+    mat_lower = payload.material.type.lower().strip()
+    if "pla" in mat_lower:
+        density = 1.24
+    elif "tpu" in mat_lower:
+        density = 1.20
+    elif "petg" in mat_lower:
+        density = 1.27
+    elif "abs" in mat_lower:
+        density = 1.04
+    else:
+        from ia_agent.tools.physics_calculator import PhysicsCalculator
+        density = PhysicsCalculator.MATERIAL_DENSITIES.get(mat_lower, 1.24)
+
+    estimated_pre_mesh_mass = data["mass_g"]
+    is_mass_limit_valid = estimated_pre_mesh_mass <= 100.0
+
     return {
         "predictionId": f"py_pred_{random.randint(1000,9999)}",
         "mechanical": {
-            "yieldStrengthMpa": data["strength_MPa"],
+            "yieldStrengthMpa": data["strength_MPa"] * 0.7,
+            "ultimateStrengthMpa": data["strength_MPa"],
+            "elasticModulusGpa": data.get("modulus_MPa", 1500.0 if payload.material.type.lower() == "pla" else 80.0) / 1000.0,
             "maxForceNewtons": data["max_force_N"],
             "deformationMm": 4.2 - (infill * 0.02),
             "stiffnessNmm": data["stiffness_N_mm"],
-            "energyAbsorptionJoules": data["energy_J"]
+            "energyAbsorptionJoules": data["energy_J"],
+            "specificEnergyAbsorptionKjKg": data.get("sea_kJ_kg", data["energy_J"] / 66.3)
         },
         "manufacturing": {
             "printabilityScore": 45 if infill < 10 else 85,
             "materialEfficiency": 88 if payload.source == 'experimental_lab' else 72,
-            "estimatedMassGrams": data["mass_g"],
+            "estimatedMassGrams": estimated_pre_mesh_mass,
             "estimatedTimeSeconds": data["print_time_seconds"],
             "timeBreakdown": data["time_breakdown"],
-            "warnings": out_warnings
+            "warnings": out_warnings,
+            "mesh_volume_mm3": None,
+            "material_density_g_cm3": density,
+            "mesh_mass_g": None,
+            "estimated_pre_mesh_mass": estimated_pre_mesh_mass,
+            "mass_source": "pre_mesh_preview",
+            "is_mass_limit_valid": is_mass_limit_valid,
+            "mass_limit_g": 100.0
         },
         "confidenceScore": data["confidence"],
-        "modelUsed": data["model_used"]
+        "modelUsed": data["model_used"],
+        "mesh_volume_mm3": None,
+        "material_density_g_cm3": density,
+        "mesh_mass_g": None,
+        "estimated_pre_mesh_mass": estimated_pre_mesh_mass,
+        "mass_source": "pre_mesh_preview",
+        "is_mass_limit_valid": is_mass_limit_valid,
+        "mass_limit_g": 100.0
     }
 
 
@@ -283,11 +325,16 @@ def get_patterns():
         "lidinoid": "Lidinoid",
         "split_p": "Split P",
         "neovius": "Neovius",
-        "iwp": "I-WP"
+        "iwp": "I-WP",
+        "tpms_graded": "Graded Gyroid (TPMS)"
     }
 
 @app.post("/api/generate_stl")
 def generate_stl(payload: STLOptPayload):
+    # Normalize pattern
+    if payload.pattern.lower().strip().endswith("_tpms"):
+        payload.pattern = payload.pattern.lower().strip()[:-5]
+        
     # Bounds validations to prevent OOM conditions on numpy grid allocations
     if not (10.0 <= payload.size <= 150.0):
         raise HTTPException(status_code=400, detail="Size must be between 10.0 and 150.0 mm.")
@@ -319,6 +366,10 @@ def generate_stl(payload: STLOptPayload):
 
 @app.post("/api/generate_mesh")
 def generate_mesh(payload: STLOptPayload):
+    # Normalize pattern
+    if payload.pattern.lower().strip().endswith("_tpms"):
+        payload.pattern = payload.pattern.lower().strip()[:-5]
+        
     # Bounds validations to prevent OOM conditions on numpy grid allocations
     if not (10.0 <= payload.size <= 150.0):
         raise HTTPException(status_code=400, detail="Size must be between 10.0 and 150.0 mm.")
@@ -335,10 +386,33 @@ def generate_mesh(payload: STLOptPayload):
         
     try:
         mesh = compile_trimesh_geometry(payload, for_stl=False)
-        # Return vertices and faces as flat arrays for lightweight JSON exchange
+        from backend.src.optimization.RealMassEstimator import calculate_mesh_mass
+        mesh_mass = calculate_mesh_mass(mesh, payload.material)
+
+        mat_lower = payload.material.lower().strip()
+        if "pla" in mat_lower:
+            density = 1.24
+        elif "tpu" in mat_lower:
+            density = 1.20
+        elif "petg" in mat_lower:
+            density = 1.27
+        elif "abs" in mat_lower:
+            density = 1.04
+        else:
+            from ia_agent.tools.physics_calculator import PhysicsCalculator
+            density = PhysicsCalculator.MATERIAL_DENSITIES.get(mat_lower, 1.24)
+
+        # Return vertices, faces and consistent mass metadata
         return {
             "vertices": mesh.vertices.flatten().tolist(),
-            "faces": mesh.faces.flatten().tolist()
+            "faces": mesh.faces.flatten().tolist(),
+            "mesh_volume_mm3": float(abs(mesh.volume)),
+            "material_density_g_cm3": density,
+            "mesh_mass_g": mesh_mass,
+            "estimated_pre_mesh_mass": None,
+            "mass_source": "mesh_volume",
+            "is_mass_limit_valid": mesh_mass <= 100.0,
+            "mass_limit_g": 100.0
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Web geometry preview generation error: {str(e)}")
@@ -363,6 +437,10 @@ class ExportProjectPayload(BaseModel):
 
 @app.post("/api/export_project")
 def export_project(payload: ExportProjectPayload):
+    # Normalize pattern
+    if payload.pattern.lower().strip().endswith("_tpms"):
+        payload.pattern = payload.pattern.lower().strip()[:-5]
+        
     # Validate bounds
     if not (10.0 <= payload.size <= 150.0):
         raise HTTPException(status_code=400, detail="Size must be between 10.0 and 150.0 mm.")
@@ -481,22 +559,46 @@ def export_project(payload: ExportProjectPayload):
         )
         print_time_mins = time_data["total_minutes"]
         
-        # Calculate real geometric mass of the compiled mesh
-        from backend.src.optimization.RealMassEstimator import RealMassEstimator
-        mass_g = RealMassEstimator.estimate_mass_g(mesh, payload.material)
+        # Calculate real geometric mass of the compiled mesh using central function
+        from backend.src.optimization.RealMassEstimator import calculate_mesh_mass
+        mass_g = calculate_mesh_mass(mesh, payload.material)
+
+        mat_lower = payload.material.lower().strip()
+        if "pla" in mat_lower:
+            density = 1.24
+        elif "tpu" in mat_lower:
+            density = 1.20
+        elif "petg" in mat_lower:
+            density = 1.27
+        elif "abs" in mat_lower:
+            density = 1.04
+        else:
+            from ia_agent.tools.physics_calculator import PhysicsCalculator
+            density = PhysicsCalculator.MATERIAL_DENSITIES.get(mat_lower, 1.24)
 
         # 4. Create simulation metadata
+        fallback_mod = (1500.0 + infill * 5.0) if payload.material.lower() == "pla" else (80.0 + infill * 5.0)
         simulation_metadata = {
-            "yieldStrengthMpa": predicted_strength,
-            "maxForceNewtons": 450 + (infill * 12),
+            "yieldStrengthMpa": predicted_strength * 0.7,
+            "ultimateStrengthMpa": predicted_strength,
+            "elasticModulusGpa": fallback_mod / 1000.0,
+            "maxForceNewtons": predicted_strength * (payload.size * payload.size),
             "deformationMm": 4.2 - (infill * 0.02),
-            "stiffnessNmm": 120 + (infill * 4),
+            "stiffnessNmm": (fallback_mod * (payload.size * payload.size)) / payload.size if payload.size > 0 else 100.0,
             "energyAbsorptionJoules": 14.5 + (infill * 0.15),
+            "specificEnergyAbsorptionKjKg": (14.5 + infill * 0.15) / mass_g if mass_g > 0 else 0.05,
             "densityRelative": infill / 100.0,
             "printingTimeMinutes": print_time_mins,
             "massGrams": mass_g,
             "confidenceScore": confidence,
-            "modelUsed": model_used_name
+            "modelUsed": model_used_name,
+            "mesh_volume_mm3": float(abs(mesh.volume)),
+            "material_density_g_cm3": density,
+            "mesh_mass_g": mass_g,
+            "estimated_pre_mesh_mass": None,
+            "mass_source": "mesh_volume",
+            "is_mass_limit_valid": mass_g <= 100.0,
+            "mass_limit_g": 100.0
         }
         
         # 5. Create GCODE (Safe, realistic, multi-layer Gcode path simulation)
@@ -547,6 +649,23 @@ def export_project(payload: ExportProjectPayload):
         feed_rate = payload.printSpeed * 60.0
         wall_t = payload.wallThickness
 
+        # Pre-calculate TPMS threshold C if pattern is gyroid or triply_periodic
+        tpms_C = 0.0
+        if payload.pattern in ["gyroid", "triply_periodic"]:
+            cell_size = payload.cellSize if payload.cellSize > 0.5 else 8.0
+            k_val = (2 * np.pi) / cell_size
+            
+            # Use a fast 3D grid to estimate percentile threshold C for infill density
+            xs = np.linspace(0, size, 30)
+            ys = np.linspace(0, size, 30)
+            zs = np.linspace(0, size, 30)
+            XS, YS, ZS = np.meshgrid(xs, ys, zs, indexing='ij')
+            if payload.pattern == "gyroid":
+                raw_f = np.sin(k_val * XS) * np.cos(k_val * YS) + np.sin(k_val * YS) * np.cos(k_val * ZS) + np.sin(k_val * ZS) * np.cos(k_val * XS)
+            else:
+                raw_f = np.cos(k_val * XS) + np.cos(k_val * YS) + np.cos(k_val * ZS)
+            tpms_C = float(np.percentile(raw_f, payload.infillDensity))
+
         for layer in range(layers_to_gen):
             z = (layer + 1) * lh
             gcode_lines.append(f"\n; --- LAYER {layer + 1} (Z = {z:.2f} mm) ---")
@@ -585,21 +704,42 @@ def export_project(payload: ExportProjectPayload):
                         gcode_lines.append(f"G1 X{inf_end:.2f} Y{y_val:.2f} E{e_inf:.4f} F{feed_rate:.0f}")
                         gcode_lines.append("G1 E-1.0000 F1800 ; Retract")
                 elif payload.pattern in ["gyroid", "triply_periodic"]:
-                    spacing = max(5.0, 25.0 * (1.0 - infill_density_ratio))
-                    x_coords = np.arange(inf_start + spacing/2, inf_end, spacing)
-                    for x_val in x_coords:
-                        y_steps = np.linspace(inf_start, inf_end, 15)
-                        a = spacing * 0.3
-                        freq = 2 * np.pi / spacing
-                        x_start = x_val + a * np.sin(y_steps[0] * freq)
-                        gcode_lines.append(f"G1 X{x_start:.2f} Y{y_steps[0]:.2f} F6000 ; Travel")
+                    cell_size = payload.cellSize if payload.cellSize > 0.5 else 8.0
+                    k_val = (2 * np.pi) / cell_size
+                    
+                    # Evaluate 2D grid of size (inf_end - inf_start) / grid_res
+                    grid_res = 0.8
+                    grid_x = np.arange(inf_start, inf_end + grid_res, grid_res)
+                    grid_y = np.arange(inf_start, inf_end + grid_res, grid_res)
+                    X2D, Y2D = np.meshgrid(grid_x, grid_y, indexing='ij')
+                    
+                    if payload.pattern == "gyroid":
+                        val = np.sin(k_val * X2D) * np.cos(k_val * Y2D) + np.sin(k_val * Y2D) * np.cos(k_val * z) + np.sin(k_val * z) * np.cos(k_val * X2D)
+                    else: # triply_periodic
+                        val = np.cos(k_val * X2D) + np.cos(k_val * Y2D) + np.cos(k_val * z)
+                        
+                    # Find contour segments at level tpms_C
+                    contours = measure.find_contours(val, tpms_C)
+                    
+                    for segment in contours:
+                        if len(segment) < 2:
+                            continue
+                        # Start of segment
+                        r0, c0 = segment[0]
+                        x_curr = inf_start + r0 * grid_res
+                        y_curr = inf_start + c0 * grid_res
+                        
+                        gcode_lines.append(f"G1 X{x_curr:.2f} Y{y_curr:.2f} F6000 ; Travel")
                         gcode_lines.append("G1 E1.0000 F1800 ; Prime")
-                        for next_y in y_steps[1:]:
-                            next_x = x_val + a * np.sin(next_y * freq)
-                            dist = np.sqrt((next_x - x_start)**2 + (next_y - y_steps[0])**2)
+                        
+                        for r_next, c_next in segment[1:]:
+                            next_x = inf_start + r_next * grid_res
+                            next_y = inf_start + c_next * grid_res
+                            dist = np.sqrt((next_x - x_curr)**2 + (next_y - y_curr)**2)
                             e_step = dist * lh * 0.45 * 0.06
                             gcode_lines.append(f"G1 X{next_x:.2f} Y{next_y:.2f} E{e_step:.4f} F{feed_rate*0.8:.0f}")
-                            x_start = next_x
+                            x_curr = next_x
+                            y_curr = next_y
                         gcode_lines.append("G1 E-1.0000 F1800 ; Retract")
                 else: # honeycomb
                     spacing = max(6.0, 30.0 * (1.0 - infill_density_ratio))
@@ -688,6 +828,10 @@ class AIPostprocessPayload(BaseModel):
 
 @app.post("/api/manufacturing/postprocess")
 def postprocess_manufacturing(payload: AIPostprocessPayload):
+    # Normalize pattern
+    if payload.pattern.lower().strip().endswith("_tpms"):
+        payload.pattern = payload.pattern.lower().strip()[:-5]
+        
     # Bounds validations
     if not (10.0 <= payload.size <= 150.0):
         raise HTTPException(status_code=400, detail="Size must be between 10.0 and 150.0 mm.")
@@ -703,6 +847,7 @@ def postprocess_manufacturing(payload: AIPostprocessPayload):
         raise HTTPException(status_code=400, detail="Wall thickness must be less than half of the cube size.")
         
     try:
+        from backend.src.optimization.RealMassEstimator import RealMassEstimator
         # 1. Compile 3D geometry
         stl_payload = STLOptPayload(
             pattern=payload.pattern,
@@ -763,7 +908,7 @@ def postprocess_manufacturing(payload: AIPostprocessPayload):
             "source": "api_postprocess",
             "geometry": {
                 "boundingBoxMm": [payload.size, payload.size, payload.size],
-                "volumeMm3": float(repaired_mesh.volume)
+                "volumeMm3": payload.size * payload.size * payload.size
             },
             "material": {
                 "type": payload.material.lower(),
@@ -802,6 +947,23 @@ def postprocess_manufacturing(payload: AIPostprocessPayload):
         # 7. Slicer profile (OrcaSlicer only)
         orca = generate_orca_profile(ml_settings, payload.printerName, payload.material)
         
+        # Calculate real geometric mass of repaired mesh
+        from backend.src.optimization.RealMassEstimator import calculate_mesh_mass
+        mesh_mass = calculate_mesh_mass(repaired_mesh, payload.material)
+
+        mat_lower = payload.material.lower().strip()
+        if "pla" in mat_lower:
+            density = 1.24
+        elif "tpu" in mat_lower:
+            density = 1.20
+        elif "petg" in mat_lower:
+            density = 1.27
+        elif "abs" in mat_lower:
+            density = 1.04
+        else:
+            from ia_agent.tools.physics_calculator import PhysicsCalculator
+            density = PhysicsCalculator.MATERIAL_DENSITIES.get(mat_lower, 1.24)
+
         # 8. Build project manifest
         project_manifest = {
             "manifest_version": "1.0",
@@ -825,11 +987,18 @@ def postprocess_manufacturing(payload: AIPostprocessPayload):
                 "deformation_mm": 4.2 - (payload.infillDensity * 0.02),
                 "stiffness_N_mm": predictions_res["stiffness_N_mm"] if predictions_res else 0.0,
                 "energy_absorption_J": predictions_res["energy_J"] if predictions_res else 0.0,
-                "estimated_mass_g": predictions_res["mass_g"] if predictions_res else 0.0,
+                "estimated_mass_g": mesh_mass,
                 "print_time_seconds": predictions_res["print_time_seconds"] if predictions_res else 0.0,
                 "time_breakdown": predictions_res["time_breakdown"] if predictions_res else {},
                 "confidence": predictions_res["confidence"] if predictions_res else 0.5,
-                "model_used": predictions_res["model_used"] if predictions_res else "None"
+                "model_used": predictions_res["model_used"] if predictions_res else "None",
+                "mesh_volume_mm3": float(abs(repaired_mesh.volume)),
+                "material_density_g_cm3": density,
+                "mesh_mass_g": mesh_mass,
+                "estimated_pre_mesh_mass": None,
+                "mass_source": "mesh_volume",
+                "is_mass_limit_valid": mesh_mass <= 100.0,
+                "mass_limit_g": 100.0
             },
             "slicing_recommendations": ml_settings
         }
@@ -861,7 +1030,14 @@ def postprocess_manufacturing(payload: AIPostprocessPayload):
                 "ai_optimization": ai_opt_md,
                 "project_manifest": project_manifest
             },
-            "download_url": "/api/manufacturing/download"
+            "download_url": "/api/manufacturing/download",
+            "mesh_volume_mm3": float(abs(repaired_mesh.volume)),
+            "material_density_g_cm3": density,
+            "mesh_mass_g": mesh_mass,
+            "estimated_pre_mesh_mass": None,
+            "mass_source": "mesh_volume",
+            "is_mass_limit_valid": mesh_mass <= 100.0,
+            "mass_limit_g": 100.0
         }
     except Exception as e:
         import traceback

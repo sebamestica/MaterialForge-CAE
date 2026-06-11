@@ -25,8 +25,22 @@ class DomainGuardTool:
         """
         # Format input config keys to match DomainGuard expected names
         infill = float(config.get("infill", config.get("infill_density_percent", 35.0)))
-        material = str(config.get("material", "pla")).lower()
-        pattern = str(config.get("pattern", config.get("infill_pattern", "gyroid"))).lower()
+        # Handle material dict or string
+        m = config.get("material", "pla")
+        if isinstance(m, dict):
+            material = str(m.get("type", "pla")).lower().strip()
+        else:
+            material = str(m).lower().strip()
+            
+        # Handle pattern dict or string
+        p = config.get("pattern", config.get("infill_pattern", "gyroid"))
+        if isinstance(p, dict):
+            pattern = str(p.get("type", "gyroid")).lower().strip()
+        else:
+            pattern = str(p).lower().strip()
+            
+        if pattern.endswith("_tpms"):
+            pattern = pattern[:-5]
         wall_t = float(config.get("wallThickness", config.get("wall_thickness_mm", 1.2)))
         layer_h = float(config.get("layerHeight", config.get("layer_height_mm", 0.2)))
         speed = float(config.get("printSpeed", config.get("print_speed_mm_s", 50.0)))

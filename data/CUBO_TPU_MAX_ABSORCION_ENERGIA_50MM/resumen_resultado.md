@@ -1,7 +1,7 @@
 # Resumen de Optimización TPU
-El diseño ganador es **gyroid_10_0.8**.
+El diseño ganador es **tpms_graded_10_0.8**.
 
-- **Score Final:** 1.0114
+- **Score Final:** 1.1191
 - **Masa:** 27.55 g
-- **Energía Absorbida:** 3.96 J
+- **Energía Absorbida:** 4.62 J
 - **Rigidez:** 100.96 MPa

@@ -53,6 +53,13 @@ class Predictor:
         """
         Predicts mechanical properties with confidence intervals based on input print/lattice parameters.
         """
+        # Clean the pattern name of any _tpms suffixes
+        for k in ["infill_pattern", "topology"]:
+            if k in payload and isinstance(payload[k], str):
+                val = payload[k].lower().strip()
+                if val.endswith("_tpms"):
+                    payload[k] = val[:-5]
+                    
         # 1. Domain Guard Check
         warnings, confidence_level = self.domain_guard.validate_parameters(payload)
 
@@ -77,8 +84,13 @@ class Predictor:
                     val += infill * 5.0
                 elif "strain" in target:
                     val = 0.05 + (infill * 0.001)
-                elif "energy" in target or "sea" in target:
+                elif "energy_density" in target:
                     val = 5.0 + (infill * 0.1)
+                elif "specific_energy_absorption" in target or "sea" in target:
+                    from ia_agent.tools.physics_calculator import PhysicsCalculator
+                    density = PhysicsCalculator.MATERIAL_DENSITIES.get(mat, 1.24)
+                    energy_dens = 5.0 + (infill * 0.1)
+                    val = energy_dens / density
                 elif "efficiency" in target:
                     val = 0.65 if test_t == "compression" else 0.0
                 else:
@@ -244,16 +256,19 @@ def run_unified_prediction_service(config: dict) -> dict:
     if "slicing" in config:
         s = config["slicing"]
         infill = float(s.get("infillPercentage", 35.0))
-        pattern = str(s.get("patternType", "gyroid")).lower()
+        pattern = str(s.get("patternType", "gyroid")).lower().strip()
         wall_t = float(s.get("shellThicknessMm", 1.2))
         layer_h = float(s.get("layerHeightMm", 0.2))
         speed = float(s.get("printSpeedMmS", 50.0))
     else:
         infill = float(config.get("infill", config.get("infill_density_percent", 35.0)))
-        pattern = str(config.get("pattern", config.get("infill_pattern", "gyroid"))).lower()
+        pattern = str(config.get("pattern", config.get("infill_pattern", "gyroid"))).lower().strip()
         wall_t = float(config.get("wallThickness", config.get("wall_thickness_mm", 1.2)))
         layer_h = float(config.get("layerHeight", config.get("layer_height_mm", 0.2)))
         speed = float(config.get("printSpeed", config.get("print_speed_mm_s", 50.0)))
+        
+    if pattern.endswith("_tpms"):
+        pattern = pattern[:-5]
         
     printer_name = str(config.get("printerName", "Creality K1 Max"))
     cell_size = float(config.get("cellSize", config.get("cell_size_mm", 8.0)))
@@ -293,10 +308,13 @@ def run_unified_prediction_service(config: dict) -> dict:
                 return float(val)
         return float(fallback_val)
         
-    strength = get_val("max_stress_MPa", 25.4 + infill * 0.3)
+    strength = get_val("compressive_strength_MPa", get_val("max_stress_MPa", 25.4 + infill * 0.3))
     modulus = get_val("young_modulus_MPa", 1500.0 if mat_type == "pla" else 80.0)
     energy_dens = get_val("energy_density_MJ_m3", 10.0)
-    sea = get_val("specific_energy_absorption_kJ_kg", energy_dens / 1.24)
+    
+    from ia_agent.tools.physics_calculator import PhysicsCalculator
+    mat_density = PhysicsCalculator.MATERIAL_DENSITIES.get(mat_type, 1.24)
+    sea = get_val("specific_energy_absorption_kJ_kg", energy_dens / mat_density)
     
     # 4. Call Physics Calculator for mass and time
     from ia_agent.tools.physics_calculator import PhysicsCalculator

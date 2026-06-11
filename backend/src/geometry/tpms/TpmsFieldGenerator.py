@@ -26,6 +26,8 @@ class TpmsFieldGenerator:
             return np.ones_like(X) * size
 
         pattern = getattr(payload, "pattern", "gyroid").lower().strip()
+        if pattern.endswith("_tpms"):
+            pattern = pattern[:-5]
         orientation = getattr(payload, "orientation", "Isotrópica")
 
         # 2. Map cell frequencies based on scale/orientation
@@ -70,6 +72,27 @@ class TpmsFieldGenerator:
             return np.maximum(np.maximum(sdf_x, sdf_y), sdf_z)
 
         # 5. Dispatch to 3D Skeletal/Network TPMS Generators
+        if pattern in ['graded_gyroid', 'graded-gyroid', 'tpms_graded', 'tpms-graded', 'graded']:
+            pattern = 'tpms_graded'
+
+        if pattern == 'tpms_graded':
+            # Base generator is Gyroid
+            generator = GyroidGenerator
+            raw_field = generator.evaluate_field(X, Y, Z, kx, ky, kz)
+            grad_norm = generator.evaluate_gradient_norm(X, Y, Z, kx, ky, kz)
+            
+            C = np.zeros_like(raw_field)
+            # Quadratic grading along Z-axis (indexing='ij' meshgrid: Z varies along axis 2)
+            for k_idx in range(raw_field.shape[2]):
+                z_val = Z[0, 0, k_idx]
+                u = (z_val - size/2.0) / (size/2.0)
+                infill_local = infill_pct * (0.5 + 1.5 * (u**2))
+                infill_local = np.clip(infill_local, 5.0, 95.0)
+                C[:, :, k_idx] = np.percentile(raw_field[:, :, k_idx], infill_local)
+                
+            sdf_approx = (C - raw_field) / grad_norm
+            return sdf_approx
+
         generator = GyroidGenerator
         if pattern == 'gyroid':
             generator = GyroidGenerator

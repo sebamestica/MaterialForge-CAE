@@ -10,10 +10,13 @@ export interface TimeBreakdown {
 
 export interface MechanicalPredictions {
   yieldStrengthMpa: number;
+  ultimateStrengthMpa?: number;
+  elasticModulusGpa?: number;
   maxForceNewtons: number;
   deformationMm: number;
   stiffnessNmm: number;
   energyAbsorptionJoules: number;
+  specificEnergyAbsorptionKjKg?: number;
   densityRelative: number;
   printingTimeMinutes: number;
   massGrams: number;
@@ -21,6 +24,13 @@ export interface MechanicalPredictions {
   modelUsed: string;
   warnings?: Array<{ code: string; severity: string; text: string }>;
   timeBreakdown?: TimeBreakdown;
+  mesh_volume_mm3?: number | null;
+  material_density_g_cm3?: number;
+  mesh_mass_g?: number | null;
+  estimated_pre_mesh_mass?: number | null;
+  mass_source?: string;
+  is_mass_limit_valid?: boolean;
+  mass_limit_g?: number;
 }
 
 export interface MaterialInfo {
@@ -295,7 +305,15 @@ export const useLabStore = create<LabState>((set, get) => ({
 
   setParam: (key, value) => {
     const prevMode = get().viewportMode;
-    set({ [key]: value } as any);
+    let finalVal = value;
+    if (key === "pattern" && typeof value === "string") {
+      let cleanVal = value.toLowerCase().trim();
+      if (cleanVal.endsWith("_tpms")) {
+        cleanVal = cleanVal.slice(0, -5);
+      }
+      finalVal = cleanVal as any;
+    }
+    set({ [key]: finalVal } as any);
 
     if (key === "workspaceFocus") {
       const focus = value as string;
@@ -414,10 +432,13 @@ export const useLabStore = create<LabState>((set, get) => ({
           // Map response fields to predictions state directly from the physics-based backend
           const predictions: MechanicalPredictions = {
             yieldStrengthMpa: data.mechanical.yieldStrengthMpa,
+            ultimateStrengthMpa: data.mechanical.ultimateStrengthMpa,
+            elasticModulusGpa: data.mechanical.elasticModulusGpa,
             maxForceNewtons: data.mechanical.maxForceNewtons,
             deformationMm: data.mechanical.deformationMm,
             stiffnessNmm: data.mechanical.stiffnessNmm,
             energyAbsorptionJoules: data.mechanical.energyAbsorptionJoules,
+            specificEnergyAbsorptionKjKg: data.mechanical.specificEnergyAbsorptionKjKg,
             densityRelative: state.infill / 100.0,
             printingTimeMinutes: Math.round(data.manufacturing.estimatedTimeSeconds / 60),
             massGrams: Math.round(data.manufacturing.estimatedMassGrams * 10) / 10,
@@ -425,6 +446,13 @@ export const useLabStore = create<LabState>((set, get) => ({
             modelUsed: data.modelUsed,
             warnings: data.manufacturing.warnings,
             timeBreakdown: data.manufacturing.timeBreakdown,
+            mesh_volume_mm3: data.mesh_volume_mm3,
+            material_density_g_cm3: data.material_density_g_cm3,
+            mesh_mass_g: data.mesh_mass_g,
+            estimated_pre_mesh_mass: data.estimated_pre_mesh_mass,
+            mass_source: data.mass_source,
+            is_mass_limit_valid: data.is_mass_limit_valid,
+            mass_limit_g: data.mass_limit_g,
           };
 
           set({ predictions, loadingPredictions: false, error: null });
@@ -534,7 +562,7 @@ export const useLabStore = create<LabState>((set, get) => ({
           signal,
         });
 
-        if (res.ok) {
+         if (res.ok) {
           const data = await res.json();
           set({
             meshVertices: data.vertices,
@@ -542,6 +570,23 @@ export const useLabStore = create<LabState>((set, get) => ({
             loadingMesh: false,
             error: null,
           });
+
+          // Overwrite preview mass with the actual volume-based physical mass
+          const currentPredictions = get().predictions;
+          if (currentPredictions && data.mesh_mass_g !== undefined && data.mesh_mass_g !== null) {
+            set({
+              predictions: {
+                ...currentPredictions,
+                massGrams: Math.round(data.mesh_mass_g * 10) / 10,
+                mesh_volume_mm3: data.mesh_volume_mm3,
+                material_density_g_cm3: data.material_density_g_cm3,
+                mesh_mass_g: data.mesh_mass_g,
+                mass_source: data.mass_source,
+                is_mass_limit_valid: data.is_mass_limit_valid,
+                mass_limit_g: data.mass_limit_g
+              }
+            });
+          }
         } else {
           const errData = await res.json().catch(() => ({}));
           set({ 

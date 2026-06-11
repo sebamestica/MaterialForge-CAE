@@ -31,8 +31,8 @@ class DomainGuard:
                 "post_curing_time_min": (0.0, 120.0)
             }
             self.known_categorical = {
-                "material": ["pla", "carbon-pla", "abs", "fluoroelastomer"],
-                "infill_pattern": ["gyroid", "honeycomb", "triply_periodic", "grid", "triangular", "solid"]
+                "material": ["pla", "carbon-pla", "abs", "fluoroelastomer", "tpu"],
+                "infill_pattern": ["gyroid", "honeycomb", "triply_periodic", "grid", "triangular", "solid", "tpms_graded"]
             }
             return
 
@@ -59,6 +59,19 @@ class DomainGuard:
             for col in cat_cols:
                 if col in df.columns:
                     self.known_categorical[col] = [str(x).lower().strip() for x in df[col].dropna().unique()]
+
+            # Ensure TPU and tpms_graded are registered as valid categories
+            if "material" in self.known_categorical:
+                if "tpu" not in self.known_categorical["material"]:
+                    self.known_categorical["material"].append("tpu")
+            else:
+                self.known_categorical["material"] = ["pla", "carbon-pla", "abs", "fluoroelastomer", "tpu"]
+
+            if "infill_pattern" in self.known_categorical:
+                if "tpms_graded" not in self.known_categorical["infill_pattern"]:
+                    self.known_categorical["infill_pattern"].append("tpms_graded")
+            else:
+                self.known_categorical["infill_pattern"] = ["gyroid", "honeycomb", "triply_periodic", "grid", "triangular", "solid", "tpms_graded"]
 
         except Exception as e:
             print(f"DomainGuard: error loading bounds: {e}")

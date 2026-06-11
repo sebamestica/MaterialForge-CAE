@@ -1,58 +1,48 @@
-
-import numpy as np
-from skimage import measure
-import trimesh
+import sys
 import os
 from pathlib import Path
 
-OUTPUT_DIR = Path(__file__).parent.parent.parent / "data" / "BLOQUE_PLA_MAX_RESISTENCIA_50MM"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# Add root directory to sys.path to enable backend imports
+ROOT_DIR = Path(__file__).parent.parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.append(str(ROOT_DIR))
 
-# Parameters
-size = 50.0  # mm
-wall_t = 2.0  # mm
-res = 1.0  # 1mm resolution for the grid (increase for more detail)
-grid_size = int(size / res) + 1
+from backend.src.geometry.compiler import compile_trimesh_geometry
 
-# Create grid
-x = np.linspace(0, size, grid_size)
-y = np.linspace(0, size, grid_size)
-z = np.linspace(0, size, grid_size)
-X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
+class STLOptPayload:
+    def __init__(self):
+        self.pattern = "gyroid"
+        self.infillDensity = 45.0
+        self.wallThickness = 1.2
+        self.infillThickness = 0.6
+        self.material = "PLA"
+        self.size = 50.0
+        self.showShell = True
+        self.cellSize = 6.0
+        self.orientation = "Isotrópica"
+        self.resolution = "Alta"
 
-# Gyroid parameters
-k = (2 * np.pi) / 10.0  # 10mm cell size
-# Gyroid: sin(kx)cos(ky) + sin(ky)cos(kz) + sin(kz)cos(kx)
-gyroid = np.sin(k * X) * np.cos(k * Y) + np.sin(k * Y) * np.cos(k * Z) + np.sin(k * Z) * np.cos(k * X)
+def main():
+    OUTPUT_DIR = ROOT_DIR / "data" / "BLOQUE_PLA_MAX_RESISTENCIA_50MM"
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    payload = STLOptPayload()
+    print("Compilando geometría del bloque 3D usando el compilador de producción...")
+    mesh = compile_trimesh_geometry(payload, for_stl=True)
+    
+    # Export STL
+    stl_path = OUTPUT_DIR / "modelo_final.stl"
+    mesh.export(str(stl_path))
+    
+    # Export OBJ
+    obj_path = OUTPUT_DIR / "modelo_final.obj"
+    mesh.export(str(obj_path))
+    
+    print(f"Modelos exportados exitosamente a {OUTPUT_DIR}:")
+    print(f"  - Bounds: {mesh.bounds.tolist()}")
+    print(f"  - Volumen: {mesh.volume:.2f} mm3")
+    print(f"  - Watertight: {mesh.is_watertight}")
+    print(f"  - Componentes del mesh: {len(mesh.split())}")
 
-# Define solid regions
-# 1. Outer walls
-is_wall = (X < wall_t) | (X > size - wall_t) | \
-          (Y < wall_t) | (Y > size - wall_t) | \
-          (Z < wall_t) | (Z > size - wall_t)
-
-# 2. Infill (45% density)
-# For a gyroid, the density is roughly controlled by the threshold.
-# Threshold 0 is ~50%. For 45%, we need a small shift.
-threshold = -0.1 
-is_infill = gyroid < threshold
-
-# Combine
-vol = is_wall | is_infill
-
-# Marching cubes
-verts, faces, normals, values = measure.marching_cubes(vol, level=0.5)
-
-# Rescale verts to mm
-verts = verts * res
-
-# Create mesh
-mesh = trimesh.Trimesh(vertices=verts, faces=faces)
-
-# Export STL
-mesh.export(os.path.join(OUTPUT_DIR, "modelo_final.stl"))
-
-# Export OBJ
-mesh.export(os.path.join(OUTPUT_DIR, "modelo_final.obj"))
-
-print(f"Modelos exportados a {OUTPUT_DIR}")
+if __name__ == "__main__":
+    main()

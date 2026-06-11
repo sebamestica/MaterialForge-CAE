@@ -133,6 +133,155 @@ class TestTpmsValidation(unittest.TestCase):
         self.assertTrue(is_watertight, "Honeycomb mesh is not watertight")
         self.assertTrue(is_volume, "Honeycomb mesh has invalid volume")
 
+    def test_validate_diamond(self):
+        payload = MockPayload(
+            pattern="diamond",
+            infillDensity=45.0,
+            wallThickness=2.0,
+            infillThickness=1.2,
+            material="pla",
+            resolution="Media"
+        )
+        
+        t0 = time.perf_counter()
+        mesh = compile_trimesh_geometry(payload, for_stl=True)
+        t_gen = time.perf_counter() - t0
+        
+        self.assertTrue(len(mesh.vertices) > 0, "Diamond generated zero vertices")
+        self.assertTrue(len(mesh.faces) > 0, "Diamond generated zero faces")
+        
+        # Test watertightness and positive volume
+        is_watertight = mesh.is_watertight
+        is_volume = mesh.is_volume
+        
+        self.report_rows.append({
+            "pattern": "Diamond",
+            "vertices": len(mesh.vertices),
+            "faces": len(mesh.faces),
+            "time_sec": t_gen,
+            "watertight": is_watertight,
+            "volume_ok": is_volume
+        })
+        
+        self.assertTrue(is_watertight, "Diamond mesh is not watertight")
+        self.assertTrue(is_volume, "Diamond mesh has invalid volume")
+
+    def test_validate_diamond_tpms(self):
+        payload = MockPayload(
+            pattern="diamond_tpms",
+            infillDensity=45.0,
+            wallThickness=2.0,
+            infillThickness=1.2,
+            material="pla",
+            resolution="Media"
+        )
+        
+        t0 = time.perf_counter()
+        mesh = compile_trimesh_geometry(payload, for_stl=True)
+        t_gen = time.perf_counter() - t0
+        
+        self.assertTrue(len(mesh.vertices) > 0, "Diamond TPMS generated zero vertices")
+        self.assertTrue(len(mesh.faces) > 0, "Diamond TPMS generated zero faces")
+        
+        # Test watertightness and positive volume
+        is_watertight = mesh.is_watertight
+        is_volume = mesh.is_volume
+        
+        self.report_rows.append({
+            "pattern": "Diamond TPMS",
+            "vertices": len(mesh.vertices),
+            "faces": len(mesh.faces),
+            "time_sec": t_gen,
+            "watertight": is_watertight,
+            "volume_ok": is_volume
+        })
+        
+        self.assertTrue(is_watertight, "Diamond TPMS mesh is not watertight")
+        self.assertTrue(is_volume, "Diamond TPMS mesh has invalid volume")
+
+    def test_validate_tpms_graded(self):
+        payload = MockPayload(
+            pattern="tpms_graded",
+            infillDensity=35.0,
+            wallThickness=1.2,
+            infillThickness=0.6,
+            material="tpu",
+            resolution="Media"
+        )
+        
+        t0 = time.perf_counter()
+        mesh = compile_trimesh_geometry(payload, for_stl=True)
+        t_gen = time.perf_counter() - t0
+        
+        self.assertTrue(len(mesh.vertices) > 0, "tpms_graded generated zero vertices")
+        self.assertTrue(len(mesh.faces) > 0, "tpms_graded generated zero faces")
+        
+        # Test watertightness and positive volume
+        is_watertight = mesh.is_watertight
+        is_volume = mesh.is_volume
+        
+        self.report_rows.append({
+            "pattern": "tpms_graded",
+            "vertices": len(mesh.vertices),
+            "faces": len(mesh.faces),
+            "time_sec": t_gen,
+            "watertight": is_watertight,
+            "volume_ok": is_volume
+        })
+        
+        self.assertTrue(is_watertight, "tpms_graded mesh is not watertight")
+        self.assertTrue(is_volume, "tpms_graded mesh has invalid volume")
+
+    def test_mass_calculations(self):
+        from src.optimization.RealMassEstimator import calculate_mesh_mass
+        
+        # Test 1: Solid 50x50x50 mm PLA Cube (Fixed physical check)
+        payload_solid = MockPayload(
+            pattern="gyroid",
+            infillDensity=100.0,
+            wallThickness=25.0,
+            infillThickness=1.0,
+            material="pla",
+            size=50.0,
+            showShell=True,
+            cellSize=8.0,
+            orientation="Isotrópica",
+            resolution="Media"
+        )
+        mesh_solid = compile_trimesh_geometry(payload_solid, for_stl=False)
+        self.assertTrue(mesh_solid.is_watertight, "Solid cube mesh is not watertight")
+        
+        solid_vol = abs(mesh_solid.volume)
+        # Should be very close to 125000 mm^3
+        self.assertAlmostEqual(solid_vol, 125000.0, delta=5000.0)
+        
+        mass_solid = calculate_mesh_mass(mesh_solid, "pla")
+        expected_mass_solid = (solid_vol / 1000.0) * 1.24
+        self.assertAlmostEqual(mass_solid, expected_mass_solid, delta=0.5)
+        # Verify PLA solid cube mass is approx 155 g
+        self.assertTrue(145.0 <= mass_solid <= 165.0, f"Expected PLA solid cube mass around 155g, got {mass_solid}g")
+        
+        # Test 2: Gyroid 35% PLA Cube (Dynamic volume-based check)
+        payload_gyroid = MockPayload(
+            pattern="gyroid",
+            infillDensity=35.0,
+            wallThickness=1.2,
+            infillThickness=0.6,
+            material="pla",
+            size=50.0,
+            showShell=True,
+            cellSize=8.0,
+            orientation="Isotrópica",
+            resolution="Media"
+        )
+        mesh_gyroid = compile_trimesh_geometry(payload_gyroid, for_stl=False)
+        self.assertTrue(mesh_gyroid.is_watertight, "Gyroid mesh is not watertight")
+        
+        vol_gyroid = abs(mesh_gyroid.volume)
+        mass_gyroid = calculate_mesh_mass(mesh_gyroid, "pla")
+        expected_mass_gyroid = (vol_gyroid / 1000.0) * 1.24
+        self.assertAlmostEqual(mass_gyroid, expected_mass_gyroid, delta=0.1, msg="Gyroid mass should dynamically match the volume formula exactly")
+
     @classmethod
     def tearDownClass(cls):
         # Compile validation report

@@ -58,6 +58,17 @@ function PatternPreview({ pattern }: { pattern: string }) {
     );
   }
 
+  if (pattern === "diamond") {
+    return (
+      <svg className="w-14 h-14 border border-slate-200 bg-[#FAFBFC] rounded" viewBox="0 0 100 100">
+        <polygon points="50,15 80,50 50,85 20,50" fill="none" stroke="#1E40AF" strokeWidth="3" />
+        <polygon points="50,30 70,50 50,70 30,50" fill="none" stroke="#1E40AF" strokeWidth="1.5" opacity="0.6" />
+        <line x1="50" y1="15" x2="50" y2="85" stroke="#1E40AF" strokeWidth="1" opacity="0.4" strokeDasharray="3,3" />
+        <line x1="20" y1="50" x2="80" y2="50" stroke="#1E40AF" strokeWidth="1" opacity="0.4" strokeDasharray="3,3" />
+      </svg>
+    );
+  }
+
   // triply_periodic (Schwarz P)
   return (
     <svg className="w-14 h-14 border border-slate-200 bg-[#FAFBFC] rounded" viewBox="0 0 100 100">
@@ -218,7 +229,7 @@ export default function LeftPanel() {
           {activeModule === "geom" && (
             <div className="space-y-4 font-sans text-sm">
               <div className="space-y-1.5">
-                <span className="text-slate-500 font-bold text-sm cursor-help" title="Dimensiones físicas del bloque en centímetros. Límites permitidos: 1.0 cm a 15.0 cm. Afecta el volumen final y la masa total.">Dimensiones del Bounding Box ⓘ</span>
+                <span className="text-slate-500 font-bold text-sm cursor-help" title="Dimensiones físicas del bloque en centímetros. Límites permitidos: 1.0 cm a 15.0 cm. Afecta el volumen final y la masa total.">Dimensiones de la Caja Delimitadora ⓘ</span>
                 <div className="grid grid-cols-3 gap-2.5">
                   <div>
                     <span className="text-xs text-slate-400 block mb-0.5 text-center font-extrabold">ANCHO X<br/>(cm)</span>
@@ -252,7 +263,7 @@ export default function LeftPanel() {
 
               <div className="space-y-1.5">
                 <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Espesor en milímetros de la carcasa exterior sólida (shell). Límites: 0.4 mm a 10.0 mm.">
-                  <span className="font-semibold text-slate-500">Espesor de Pared (Shell) ⓘ</span>
+                  <span className="font-semibold text-slate-500">Espesor de Pared (Carcasa) ⓘ</span>
                   <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.wallThickness.toFixed(1)} mm</span>
                 </div>
                 <input
@@ -319,9 +330,9 @@ export default function LeftPanel() {
                       onChange={(e) => store.setParam("resolution", e.target.value)}
                       className="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-855 text-sm font-bold outline-none focus:border-[#1E40AF] cursor-pointer"
                     >
-                      <option value="Baja">Draft (Baja)</option>
-                      <option value="Media">Balanced (Media)</option>
-                      <option value="Alta">High (Alta)</option>
+                      <option value="Baja">Borrador (Baja)</option>
+                      <option value="Media">Balanceada (Media)</option>
+                      <option value="Alta">Alta</option>
                       <option value="Ultra">Ultra (Industrial)</option>
                     </select>
                   </div>
@@ -394,7 +405,7 @@ export default function LeftPanel() {
                 <div className="flex-1 space-y-2">
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-baseline text-slate-700 cursor-help" title="Densidad volumétrica del infill celular.">
-                      <span className="font-semibold text-sm text-slate-500">Relleno (Infill) ⓘ</span>
+                      <span className="font-semibold text-sm text-slate-500">Densidad de Relleno ⓘ</span>
                       <span className="text-[#1E40AF] font-bold font-mono text-sm">{store.infill}%</span>
                     </div>
                     <input
@@ -571,11 +582,11 @@ export default function LeftPanel() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-450">Eje de compresión:</span>
-                    <span className="text-slate-800 font-bold font-mono">Z-Axis (Y-WebGL)</span>
+                    <span className="text-slate-800 font-bold font-mono">Eje Z (Y-WebGL)</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-455">Método predictivo:</span>
-                    <span className="text-slate-800 font-bold font-mono">Gradient Boosting ML</span>
+                    <span className="text-slate-800 font-bold font-mono">Machine Learning (Gradient Boosting)</span>
                   </div>
                 </div>
               </div>

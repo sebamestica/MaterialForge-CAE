@@ -11,7 +11,7 @@ def smooth_mesh(mesh: trimesh.Trimesh, pattern: str, method: str = "taubin",
     # 1. Guard against non-smoothable patterns (only smooth TPMS structures)
     tpms_patterns = {
         "gyroid", "triply_periodic", "honeycomb", "diamond", 
-        "lidinoid", "split_p", "neovius", "iwp"
+        "lidinoid", "split_p", "neovius", "iwp", "tpms_graded"
     }
     if pattern.lower() not in tpms_patterns:
         return mesh

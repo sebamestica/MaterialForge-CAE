@@ -156,6 +156,11 @@ def validate_config_patch(current_config: Dict[str, Any], config_patch: Dict[str
     pattern = merged.get("pattern")
     if pattern is not None:
         pat_lower = str(pattern).lower().strip()
+        if pat_lower.endswith("_tpms"):
+            pat_lower = pat_lower[:-5]
+            merged["pattern"] = pat_lower
+            if "pattern" in config_patch:
+                corrected_patch["pattern"] = pat_lower
         allowed_pats = ["gyroid", "honeycomb", "triply_periodic", "grid", "diamond", "lidinoid", "split_p", "neovius", "iwp"]
         if pat_lower not in allowed_pats:
             errors.append(f"El patrón '{pattern}' no está soportado. Use uno de: {', '.join(allowed_pats)}.")
